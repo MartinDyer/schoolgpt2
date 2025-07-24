@@ -1,27 +1,29 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Deploy Infrastructure"]
+    types:
+      - completed
 
 permissions:
-  id-token: write
   contents: read
 
 jobs:
   build-and-push:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Azure Login (OIDC)
+      - name: Azure Login
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          enable-AzPSSession: false
 
       - name: Fetch ACR username from Key Vault
         id: acr-username
