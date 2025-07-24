@@ -27,20 +27,16 @@ jobs:
           keyvault: schoolgptkv123
           secrets: 'acr-user,acr-pass'
 
-      - name: Log in to Azure Container Registry
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ env.acr-user }}
-          password: ${{ env.acr-pass }}
+      - name: Azure CLI login to ACR
+        run: az acr login --name schoolgptacr123
 
       - name: Build Docker image
         run: |
-          docker build -f sample-app-aoai-chatGPT/WebApp.Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/schoolgpt-app:${{ github.sha }} sample-app-aoai-chatGPT
+          docker build -f WebApp.Dockerfile -t schoolgptacr123.azurecr.io/schoolgpt-app:${{ github.sha }} sample-app-aoai-chatGPT
 
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/schoolgpt-app:${{ github.sha }}
+          docker push schoolgptacr123.azurecr.io/schoolgpt-app:${{ github.sha }}
 
       - name: Set Docker image/tag output
         run: |
