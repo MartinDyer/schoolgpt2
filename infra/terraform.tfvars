@@ -1,0 +1,25 @@
+backend_rg           = "schoolgpt-tfstate-rg"
+backend_storage      = "schoolgpttfstate"
+backend_container    = "tfstate"
+backend_key          = "terraform.tfstate"
+
+resource_group_name  = "schoolgpt-main-rg"
+location             = "eastus"
+app_service_plan_name = "schoolgpt-asp"
+acr_name             = "schoolgptacr"
+web_app_name         = "schoolgpt-webapp"
+docker_image         = "schoolgptacr.azurecr.io/schoolgpt-app"
+docker_tag           = "latest"
+
+azure_client_id      = "<your-azure-client-id>"
+azure_tenant_id      = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea"
+azure_subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
+
+sql_server_name      = "schoolgpt-sqlsrv"
+sql_admin            = "sqladminuser"
+sql_password         = "<your-sql-password>"
+sql_db_name          = "schoolgptdb"
+
+openai_key           = "<your-openai-key>"
+gpt_endpoint         = "https://<your-openai-resource>.openai.azure.com/"
+gpt_deployment       = "gpt-4-1-turbo" 
