@@ -30,4 +30,7 @@ jobs:
         run: terraform -chdir=infra plan -var-file=infra/terraform.tfvars
 
       - name: Terraform Apply
-        run: terraform -chdir=infra apply -auto-approve -var-file=infra/terraform.tfvars 
+        run: terraform -chdir=infra apply -auto-approve -var-file=infra/terraform.tfvars
+
+      - name: Store ACR credentials in Key Vault
+        run: bash infra/post_terraform_store_acr_secrets.sh 

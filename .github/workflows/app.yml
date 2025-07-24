@@ -11,12 +11,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Azure Login (OIDC)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: false
+
+      - name: Fetch ACR username from Key Vault
+        id: acr-username
+        uses: azure/keyvault-secrets@v1
+        with:
+          keyvault: schoolgptkv123
+          secrets: acr-username
+
+      - name: Fetch ACR password from Key Vault
+        id: acr-password
+        uses: azure/keyvault-secrets@v1
+        with:
+          keyvault: schoolgptkv123
+          secrets: acr-password
+
       - name: Log in to Azure Container Registry
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          username: ${{ steps.acr-username.outputs.acr-username }}
+          password: ${{ steps.acr-password.outputs.acr-password }}
 
       - name: Build Docker image
         run: |
