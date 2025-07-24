@@ -30,6 +30,10 @@ jobs:
       - name: Azure CLI login to ACR
         run: az acr login --name schoolgptacr123
 
+      - name: List files in sample-app-aoai-chatGPT
+        run: |
+          ls -l sample-app-aoai-chatGPT
+
       - name: Build Docker image
         run: |
           cd sample-app-aoai-chatGPT
