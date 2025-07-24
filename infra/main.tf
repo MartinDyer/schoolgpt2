@@ -139,6 +139,18 @@ resource "azurerm_key_vault" "main" {
   }
 }
 
+resource "azurerm_key_vault_secret" "acr_username" {
+  name         = "acr-username"
+  value        = azurerm_container_registry.acr.admin_username
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+resource "azurerm_key_vault_secret" "acr_password" {
+  name         = "acr-password"
+  value        = azurerm_container_registry.acr.admin_password
+  key_vault_id = azurerm_key_vault.main.id
+}
+
 # Output connection info for user
 output "web_app_url" {
   value = azurerm_linux_web_app.main.default_hostname
