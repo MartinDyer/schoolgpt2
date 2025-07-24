@@ -36,7 +36,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/schoolgpt-app:${{ github.sha }} .
+          docker build -f sample-app-aoai-chatGPT/WebApp.Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/schoolgpt-app:${{ github.sha }} sample-app-aoai-chatGPT
 
       - name: Push Docker image
         run: |
