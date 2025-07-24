@@ -31,8 +31,8 @@ jobs:
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ steps.acr-username.outputs.acr-username }}
-          password: ${{ steps.acr-password.outputs.acr-password }}
+          username: ${{ env.acr-user }}
+          password: ${{ env.acr-pass }}
 
       - name: Build Docker image
         run: |
