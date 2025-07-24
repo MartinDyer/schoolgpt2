@@ -18,7 +18,7 @@ promptflow_subdomain = "schoolgptpf123"
 # SQL Database
 sql_server_name       = "schoolgptsqlsrv123"
 sql_admin             = "sqladminuser"
-sql_password          = "12345" # Please fill in
+sql_password          = "MyStrongP@ssw0rd123!" # Updated to meet Azure SQL password policy
 sql_db_name           = "schoolgptdb"
 
 # Application Insights
