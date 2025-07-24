@@ -1,8 +1,8 @@
 terraform {
   backend "azurerm" {
-    resource_group_name   = var.resource_group_name
-    storage_account_name  = var.backend_storage_account_name
-    container_name        = var.backend_container_name
+    resource_group_name   = "schoolgpt-rg"
+    storage_account_name  = "schoolgptstg"
+    container_name        = "tfstate"
     key                   = "schoolgpt.terraform.tfstate"
   }
 }
