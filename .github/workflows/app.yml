@@ -24,7 +24,7 @@ jobs:
       - name: Azure Key Vault - Get Secrets
         uses: Azure/get-keyvault-secrets@v1
         with:
-          keyvault: ${{ secrets.AZURE_KEYVAULT_NAME }}
+          keyvault: schoolgptkv123
           secrets: 'acr-user,acr-pass'
 
       - name: Log in to Azure Container Registry
