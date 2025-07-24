@@ -69,9 +69,6 @@ resource "azurerm_linux_web_app" "main" {
     "WEBSITES_PORT"         = "8080"
     # Docker image and registry settings
     "DOCKER_CUSTOM_IMAGE_NAME"        = "${var.acr_login_server}/${var.docker_image}:${var.docker_tag}"
-    "DOCKER_REGISTRY_SERVER_URL"      = "https://${var.acr_login_server}"
-    "DOCKER_REGISTRY_SERVER_USERNAME" = "<acr-username>" # TODO: Inject from Key Vault or secret
-    "DOCKER_REGISTRY_SERVER_PASSWORD" = "<acr-password>" # TODO: Inject from Key Vault or secret
     # App-specific settings
     "PROMPTFLOW_ENDPOINT"             = azurerm_cognitive_account.promptflow.endpoint
     "PROMPTFLOW_API_KEY"              = azurerm_cognitive_account.promptflow.primary_access_key
