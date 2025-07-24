@@ -140,13 +140,13 @@ resource "azurerm_key_vault" "main" {
 }
 
 resource "azurerm_key_vault_secret" "acr_username" {
-  name         = "acr-username"
+  name         = "acr-user"
   value        = azurerm_container_registry.acr.admin_username
   key_vault_id = azurerm_key_vault.main.id
 }
 
 resource "azurerm_key_vault_secret" "acr_password" {
-  name         = "acr-password"
+  name         = "acr-pass"
   value        = azurerm_container_registry.acr.admin_password
   key_vault_id = azurerm_key_vault.main.id
 }
