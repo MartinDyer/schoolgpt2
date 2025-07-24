@@ -32,10 +32,12 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -f WebApp.Dockerfile -t schoolgptacr123.azurecr.io/schoolgpt-app:${{ github.sha }} sample-app-aoai-chatGPT
+          cd sample-app-aoai-chatGPT
+          docker build -f WebApp.Dockerfile -t schoolgptacr123.azurecr.io/schoolgpt-app:${{ github.sha }} .
 
       - name: Push Docker image
         run: |
+          cd sample-app-aoai-chatGPT
           docker push schoolgptacr123.azurecr.io/schoolgpt-app:${{ github.sha }}
 
       - name: Set Docker image/tag output
