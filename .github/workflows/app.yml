@@ -5,6 +5,7 @@ on:
     workflows: ["Deploy Infrastructure"]
     types:
       - completed
+  workflow_dispatch:
 
 permissions:
   contents: read
