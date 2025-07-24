@@ -56,3 +56,16 @@ jobs:
         run: |
           echo "DOCKER_IMAGE=${{ secrets.ACR_LOGIN_SERVER }}/schoolgpt-app" >> $GITHUB_ENV
           echo "DOCKER_TAG=${{ github.sha }}" >> $GITHUB_ENV 
+
+      - name: Get SQL connection string from Terraform output
+        id: sql_conn
+        run: |
+          cd infra
+          echo "SQL_CONN=$(terraform output -raw sql_connection_string)" >> $GITHUB_ENV
+
+      - name: Set SQL connection string in App Service
+        run: |
+          az webapp config appsettings set \
+            -g schoolgpt-rg \
+            -n schoolgpt-webapp123 \
+            --settings AZURE_SQL_SERVER_CONNECTION_STRING="${{ env.SQL_CONN }}" 
