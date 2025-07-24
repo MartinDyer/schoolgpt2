@@ -29,3 +29,6 @@ key_vault_name            = "schoolgptkv123"
 azure_tenant_id           = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea"
 key_vault_admin_object_id = "12345678-90ab-cdef-1234-567890abcdef"
 azure_subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
+
+backend_storage_account_name = "schoolgptstg"
+backend_container_name      = "tfstate"

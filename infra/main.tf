@@ -1,3 +1,28 @@
+terraform {
+  backend "azurerm" {
+    resource_group_name   = var.resource_group_name
+    storage_account_name  = var.backend_storage_account_name
+    container_name        = var.backend_container_name
+    key                   = "schoolgpt.terraform.tfstate"
+  }
+}
+
+resource "azurerm_storage_account" "tfstate" {
+  name                     = var.backend_storage_account_name
+  resource_group_name      = azurerm_resource_group.main.name
+  location                 = azurerm_resource_group.main.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  allow_blob_public_access = false
+  min_tls_version          = "TLS1_2"
+}
+
+resource "azurerm_storage_container" "tfstate" {
+  name                  = var.backend_container_name
+  storage_account_name  = azurerm_storage_account.tfstate.name
+  container_access_type = "private"
+}
+
 ###############################
 # Azure ChatGPT App Template #
 ###############################
@@ -144,4 +169,9 @@ output "promptflow_api_key" {
 
 output "key_vault_name" {
   value = azurerm_key_vault.main.name
+}
+
+output "sql_connection_string" {
+  value = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.main.name};Persist Security Info=False;User ID=${var.sql_admin};Password=${var.sql_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+  sensitive = true
 }

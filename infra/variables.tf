@@ -101,4 +101,16 @@ variable "key_vault_admin_object_id" {
 variable "azure_subscription_id" {
   description = "Azure Subscription ID (Required for provider block)."
   type        = string
+}
+
+variable "backend_storage_account_name" {
+  description = "Storage account name for Terraform state (must be globally unique, 3-24 lowercase letters/numbers). (Default: schoolgptstg)"
+  type        = string
+  default     = "schoolgptstg"
+}
+
+variable "backend_container_name" {
+  description = "Blob container name for Terraform state (Default: tfstate)"
+  type        = string
+  default     = "tfstate"
 } 
