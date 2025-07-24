@@ -26,8 +26,8 @@ app_insights_name     = "schoolgpt-ai"
 
 # Azure Key Vault
 key_vault_name            = "schoolgptkv123"
-azure_tenant_id           = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea"
-key_vault_admin_object_id = "12345678-90ab-cdef-1234-567890abcdef"
+azure_tenant_id           = "d51fcef1-e2eb-407e-8d79-3cefa2255ea"
+key_vault_admin_object_id = "d8abb66a-d277-47ae-87da-0d6a98687dfb"
 azure_subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
 
 backend_storage_account_name = "schoolgptstg"
