@@ -1,3 +1,8 @@
+#################################################################
+# School Safe AI App using Azure AI Foundry - Variable Definitions
+#################################################################
+
+# Basic Infrastructure Variables
 variable "resource_group_name" {
   description = "Name for the Azure Resource Group. (Required)"
   type        = string
@@ -9,20 +14,102 @@ variable "location" {
   default     = "uksouth"
 }
 
+variable "azure_subscription_id" {
+  description = "Azure Subscription ID (Required for provider block)."
+  type        = string
+}
+
+variable "azure_tenant_id" {
+  description = "Azure Tenant ID (for Key Vault and access policy). (Required)"
+  type        = string
+}
+
+# School Configuration
+variable "school_name" {
+  description = "Name of the school (used for UI customization). (Default: School AI Assistant)"
+  type        = string
+  default     = "School AI Assistant"
+}
+
+variable "alert_email" {
+  description = "Email address for receiving alerts about content filter violations and system issues. (Required)"
+  type        = string
+}
+
+# Azure AI Foundry Configuration
+variable "ai_foundry_name" {
+  description = "Name for the Azure AI Foundry (OpenAI) resource (must be globally unique, 3-24 lowercase letters/numbers). (Required)"
+  type        = string
+}
+
+variable "ai_foundry_subdomain" {
+  description = "Custom subdomain for the AI Foundry endpoint (must be globally unique, 3-24 lowercase letters/numbers). (Required)"
+  type        = string
+}
+
+variable "azure_openai_model" {
+  description = "Azure OpenAI model name for AI Foundry (e.g., gpt-35-turbo, gpt-4, gpt-4o). (Default: gpt-35-turbo)"
+  type        = string
+  default     = "gpt-35-turbo"
+  
+  validation {
+    condition = contains([
+      "gpt-35-turbo", 
+      "gpt-35-turbo-16k", 
+      "gpt-4", 
+      "gpt-4-32k", 
+      "gpt-4o",
+      "gpt-4-turbo"
+    ], var.azure_openai_model)
+    error_message = "Model must be one of: gpt-35-turbo, gpt-35-turbo-16k, gpt-4, gpt-4-32k, gpt-4o, gpt-4-turbo"
+  }
+}
+
+variable "azure_openai_model_version" {
+  description = "Version of the Azure OpenAI model. (Default: 0613 for GPT-3.5-turbo)"
+  type        = string
+  default     = "0613"
+}
+
+variable "azure_openai_model_deployment_name" {
+  description = "Name for the model deployment in AI Foundry. (Default: school-safe-chat)"
+  type        = string
+  default     = "school-safe-chat"
+}
+
+variable "model_sku_name" {
+  description = "SKU name for the model deployment (Standard for most use cases). (Default: Standard)"
+  type        = string
+  default     = "Standard"
+}
+
+variable "model_capacity" {
+  description = "Capacity for the model deployment (tokens per minute). (Default: 120)"
+  type        = number
+  default     = 120
+  
+  validation {
+    condition = var.model_capacity >= 1 && var.model_capacity <= 1000
+    error_message = "Model capacity must be between 1 and 1000."
+  }
+}
+
+# School-Safe System Message with Enhanced Prompt Engineering
+variable "school_safe_system_message" {
+  description = "System message for school-safe AI interactions with enhanced prompt engineering for students under 16."
+  type        = string
+  default     = "You are a helpful, safe, and educational AI assistant designed specifically for students under the age of 16. Your role is to:\n\n1. Provide accurate, age-appropriate educational content\n2. Encourage learning, critical thinking, and curiosity\n3. Maintain a supportive and positive tone\n4. Refuse to discuss or provide information about inappropriate topics including violence, explicit content, harmful activities, or anything not suitable for minors\n5. Guide students toward reliable educational resources\n6. Promote digital citizenship and online safety\n7. Encourage students to verify information with teachers and trusted sources\n\nWhen responding:\n- Use clear, simple language appropriate for the student's age\n- Provide educational value in every response\n- Encourage further learning and exploration of appropriate topics\n- If asked about inappropriate content, politely redirect to educational alternatives\n- Always prioritize the student's safety, well-being, and educational development\n\nRemember: The user is under 16 years old and requires high-integrity, safe, and educational responses."
+}
+
+# Container Registry Configuration  
 variable "acr_name" {
   description = "Azure Container Registry name (must be globally unique, 5-50 lowercase letters/numbers). (Required)"
   type        = string
-}
-
-variable "app_service_plan_name" {
-  description = "Name for the App Service Plan. (Default: schoolgpt-asp)"
-  type        = string
-  default     = "schoolgpt-asp"
-}
-
-variable "web_app_name" {
-  description = "Name for the Azure Web App (must be globally unique). (Required)"
-  type        = string
+  
+  validation {
+    condition = can(regex("^[a-z0-9]{5,50}$", var.acr_name))
+    error_message = "ACR name must be 5-50 characters, lowercase letters and numbers only."
+  }
 }
 
 variable "acr_login_server" {
@@ -31,6 +118,39 @@ variable "acr_login_server" {
   default     = ""
 }
 
+# App Service Configuration
+variable "app_service_plan_name" {
+  description = "Name for the App Service Plan. (Default: schoolgpt-asp)"
+  type        = string
+  default     = "schoolgpt-asp"
+}
+
+variable "app_service_sku" {
+  description = "SKU for the App Service Plan (B1, B2, B3, S1, S2, S3, P1v2, P2v2, P3v2). (Default: B2)"
+  type        = string
+  default     = "B2"
+  
+  validation {
+    condition = contains([
+      "B1", "B2", "B3", 
+      "S1", "S2", "S3", 
+      "P1v2", "P2v2", "P3v2"
+    ], var.app_service_sku)
+    error_message = "App Service SKU must be one of: B1, B2, B3, S1, S2, S3, P1v2, P2v2, P3v2"
+  }
+}
+
+variable "web_app_name" {
+  description = "Name for the Azure Web App (must be globally unique). (Required)"
+  type        = string
+  
+  validation {
+    condition = length(var.web_app_name) >= 2 && length(var.web_app_name) <= 60
+    error_message = "Web app name must be between 2 and 60 characters."
+  }
+}
+
+# Docker Configuration
 variable "docker_image" {
   description = "Docker image name (without registry, e.g., schoolgpt-app). (Default: schoolgpt-app)"
   type        = string
@@ -43,20 +163,15 @@ variable "docker_tag" {
   default     = "latest"
 }
 
-variable "promptflow_name" {
-  description = "Name for the AI Foundry (Promptflow) Cognitive Services account (must be globally unique, 3-24 lowercase letters/numbers). (Required)"
-  type        = string
-}
-
-variable "promptflow_subdomain" {
-  description = "Custom subdomain for the Promptflow endpoint (must be globally unique, 3-24 lowercase letters/numbers). (Default: schoolgptpf123)"
-  type        = string
-  default     = "schoolgptpf123"
-}
-
+# SQL Database Configuration
 variable "sql_server_name" {
   description = "Azure SQL Server name (must be globally unique, 1-63 lowercase letters/numbers). (Required)"
   type        = string
+  
+  validation {
+    condition = can(regex("^[a-z0-9-]{1,63}$", var.sql_server_name))
+    error_message = "SQL Server name must be 1-63 characters, lowercase letters, numbers, and hyphens only."
+  }
 }
 
 variable "sql_admin" {
@@ -66,9 +181,14 @@ variable "sql_admin" {
 }
 
 variable "sql_password" {
-  description = "SQL admin password. (Required, sensitive)"
+  description = "SQL admin password (must meet Azure SQL complexity requirements). (Required, sensitive)"
   type        = string
   sensitive   = true
+  
+  validation {
+    condition = length(var.sql_password) >= 8 && length(var.sql_password) <= 128
+    error_message = "SQL password must be between 8 and 128 characters."
+  }
 }
 
 variable "sql_db_name" {
@@ -77,20 +197,46 @@ variable "sql_db_name" {
   default     = "schoolgptdb"
 }
 
+variable "sql_sku_name" {
+  description = "Azure SQL Database SKU (Basic, S0, S1, S2, S3, P1, P2, P4, P6). (Default: S1)"
+  type        = string
+  default     = "S1"
+  
+  validation {
+    condition = contains([
+      "Basic", "S0", "S1", "S2", "S3", 
+      "P1", "P2", "P4", "P6"
+    ], var.sql_sku_name)
+    error_message = "SQL SKU must be one of: Basic, S0, S1, S2, S3, P1, P2, P4, P6"
+  }
+}
+
+variable "sql_azuread_admin_login" {
+  description = "Azure AD admin login for SQL Server (typically the admin email). (Required)"
+  type        = string
+}
+
+variable "sql_azuread_admin_object_id" {
+  description = "Azure AD admin object ID for SQL Server. (Required)"
+  type        = string
+}
+
+# Application Insights Configuration
 variable "app_insights_name" {
   description = "Name for Application Insights resource. (Default: schoolgpt-ai)"
   type        = string
   default     = "schoolgpt-ai"
 }
 
+# Key Vault Configuration
 variable "key_vault_name" {
   description = "Name for the Azure Key Vault (must be globally unique, 3-24 alphanumeric characters). (Required)"
   type        = string
-}
-
-variable "azure_tenant_id" {
-  description = "Azure Tenant ID (for Key Vault and access policy). (Required)"
-  type        = string
+  
+  validation {
+    condition = can(regex("^[a-zA-Z0-9-]{3,24}$", var.key_vault_name))
+    error_message = "Key Vault name must be 3-24 characters, letters, numbers, and hyphens only."
+  }
 }
 
 variable "key_vault_admin_object_id" {
@@ -98,25 +244,20 @@ variable "key_vault_admin_object_id" {
   type        = string
 }
 
-variable "azure_subscription_id" {
-  description = "Azure Subscription ID (Required for provider block)."
-  type        = string
-}
-
-variable "backend_storage_account_name" {
-  description = "Storage account name for Terraform state (must be globally unique, 3-24 lowercase letters/numbers). (Default: schoolgptstg)"
-  type        = string
-  default     = "schoolgptstg"
-}
-
-variable "backend_container_name" {
-  description = "Blob container name for Terraform state (Default: tfstate)"
-  type        = string
-  default     = "tfstate"
-}
-
-variable "azure_openai_model" {
-  description = "Azure OpenAI model deployment name for AI Foundry (e.g., gpt-35-turbo, gpt-4). (Default: gpt-35-turbo)"
-  type        = string
-  default     = "gpt-35-turbo"
-} 
+# Terraform Backend Configuration
+# variable "backend_storage_account_name" {
+#   description = "Storage account name for Terraform state (must be globally unique, 3-24 lowercase letters/numbers). (Default: schoolgptstg)"
+#   type        = string
+#   default     = "schoolgptstg"
+#   
+#   validation {
+#     condition = can(regex("^[a-z0-9]{3,24}$", var.backend_storage_account_name))
+#     error_message = "Storage account name must be 3-24 characters, lowercase letters and numbers only."
+#   }
+# }
+# 
+# variable "backend_container_name" {
+#   description = "Blob container name for Terraform state (Default: tfstate)"
+#   type        = string
+#   default     = "tfstate"
+# } 

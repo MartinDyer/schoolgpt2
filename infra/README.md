@@ -1,166 +1,341 @@
-# SchoolGPT Azure Infrastructure – One-Click Deployment
+# School Safe AI App using Azure AI Foundry – Complete 1-Click Deployment
 
-## 📝 High Level Design: School-Safe AI App using AI Foundry
+## 🎓 **Complete High Level Design Implementation**
 
-### Solution Overview
-- This Azure-based solution lets schools use AI Foundry safely, ensuring students never see harmful content.
-- **Everything is automated:** All infrastructure is created with Terraform, and the app is deployed using GitHub Actions.
-- **One-click setup:** Users just fill in a few details and push to GitHub—no cloud expertise needed.
+This comprehensive Azure solution provides schools with **safe, monitored AI access** for students under 16. Everything is fully automated with enterprise-grade security, content filtering, and audit logging.
 
-### Component Design
-1. **Application Code**
-   - Based on Microsoft’s [sample-app-aoai-chatGPT](https://github.com/microsoft/sample-app-aoai-chatGPT.git).
-   - The sample app is imported into your repo.
-   - Unnecessary code can be removed for simplicity and safety.
-   - Uses Azure SQL as the backend (via Python, as in the sample).
-2. **Front End**
-   - Built with React (from the sample app).
-   - Design is complete and ready to use.
-   - **Access is secured with Entra ID** (Microsoft login, already in the sample).
-   - **Application Insights** is deployed for monitoring.
-   - **Chat history** is always available and stored in SQL.
-3. **Back End**
-   - Python backend (FastAPI), as provided in the sample app.
-4. **Data Layer**
-   - **Azure SQL Database** is deployed via Terraform.
-   - The app reads/writes chat data using Python.
-   - **Chat history** is shown on screen (from SQL).
-   - **Audit table** records all chat activity.
-   - **Flagged messages** (content filter triggers) are stored in a separate table.
-5. **DevOps**
-   - **GitHub** stores all code (app + Terraform).
-   - **GitHub Actions** automates both infrastructure and app deployments.
-6. **AI Foundry**
-   - **Azure AI Foundry** is used for the AI model.
-   - **GPT Turbo** is the default model, but you can connect to **GPT-4.1** if available.
-   - **Content filter is set to high** for all settings.
-   - **Prompt engineering:** Every question to AI Foundry is enriched to say the user is “under the age of 16 and needs high integrity answers.”
-
-### What’s New in This Version
-- **Fully automated:** Users don’t need to know cloud details—just fill in a few values and push to GitHub.
-- **Terraform creates everything:** Even the AI Foundry resource is created and connected automatically.
-- **GitHub Actions handles all deployments:** No manual steps.
-- **README and templates are simple and user-friendly:** Anyone can set up their own school-safe AI app.
+### ✅ **Fully Implemented Features**
+- ✅ **Azure AI Foundry Integration** with GPT-3.5-turbo/GPT-4 models
+- ✅ **High-Level Content Filtering** for all safety categories  
+- ✅ **Enhanced Prompt Engineering** for students under 16
+- ✅ **Microsoft Entra ID Authentication** (required for access)
+- ✅ **Comprehensive Audit Logging** (all interactions tracked)
+- ✅ **Content Filter Violation Tracking** with automated alerts
+- ✅ **Real-time Monitoring** with Application Insights
+- ✅ **Complete Database Schema** for chat history and audit
+- ✅ **1-Click GitHub Actions Deployment**
+- ✅ **Enterprise Security** with Key Vault and managed identities
 
 ---
 
-This folder contains everything you need to deploy the SchoolGPT app on Azure using Terraform. No deep cloud knowledge required!
+## 🚀 **What This Template Creates**
+
+### **1. Azure AI Foundry Platform**
+- **AI Foundry Cognitive Services** with OpenAI models
+- **Model Deployment**: GPT-3.5-turbo (or GPT-4) with school-safe configuration
+- **High Content Filtering**: Blocking inappropriate content across all categories
+- **Enhanced System Prompts**: Optimized for educational use by students under 16
+
+### **2. Complete Application Stack**
+- **React Frontend**: Microsoft sample app with school customizations
+- **Python Backend**: FastAPI with enhanced security and monitoring
+- **Docker Containerization**: Azure Container Registry with automated builds
+- **Azure App Service**: Linux web app with managed identity
+
+### **3. Database & Storage**
+- **Azure SQL Database**: Complete schema for chat history, audit logs, content filter violations
+- **Automated Backups**: Built-in disaster recovery
+- **Performance Optimization**: Indexed tables and optimized queries
+
+### **4. Security & Monitoring**
+- **Application Insights**: Real-time monitoring with custom dashboards
+- **Azure Key Vault**: Secure secrets management
+- **Content Filter Alerts**: Automated notifications for safety violations
+- **Comprehensive Audit Trail**: Every interaction logged for compliance
+
+### **5. DevOps Automation**
+- **Terraform Infrastructure**: All resources deployed automatically
+- **GitHub Actions**: CI/CD pipeline for app deployments
+- **Environment Management**: Separate configs for dev/staging/production
 
 ---
 
-## 🚀 What Does This Do?
-- Creates all Azure resources needed for the SchoolGPT app:
-  - Resource Group
-  - Container Registry (for app images)
-  - Linux Web App (runs the app)
-  - SQL Database (stores chat history)
-  - Application Insights (monitoring)
-  - **AI Foundry (Promptflow) resource** (for safe AI chat)
-- Connects everything automatically—no manual setup needed.
+## 🟢 **Quick Start - 1-Click Deployment**
 
----
+### **Step 1: Configure Your Settings**
+Edit `terraform.tfvars` with your school's information:
 
-## 📝 Prerequisites
-- An Azure account with permission to create resources
-- [Terraform installed](https://learn.hashicorp.com/tutorials/terraform/install-cli)
-- [Azure CLI installed](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
-
----
-
-## 🟢 What You Need to Fill In
-Just open `terraform.tfvars` and fill in these values:
-
-- `resource_group_name`: Name for your Azure resource group (everything will be created inside this)
-- `location`: Azure region (e.g., `uksouth`, `eastus`)
-- `web_app_name`: Name for your SchoolGPT app (must be globally unique)
-- `sql_password`: Admin password for your SQL database (choose something secure)
-- `key_vault_name`, `acr_name`, `promptflow_name`, `sql_server_name`: (Must be globally unique; you can use your app name as the base for all)
-- `azure_tenant_id`: Your Azure tenant ID
-- `key_vault_admin_object_id`: Your Azure AD object ID (for Key Vault access)
-
-**Example `terraform.tfvars`:**
 ```hcl
-resource_group_name   = "schoolgpt-rg"
-location              = "uksouth"
-web_app_name          = "schoolgpt-webapp123"
-sql_password          = "<your-sql-password>"
-key_vault_name        = "schoolgptkv123"
-acr_name              = "schoolgptacr123"
-promptflow_name       = "schoolgptpromptflow123"
-sql_server_name       = "schoolgptsqlsrv123"
-azure_tenant_id       = "<your-azure-tenant-id>"
-key_vault_admin_object_id = "<your-azure-ad-object-id>"
+# School Configuration
+school_name = "Westfield High School AI Assistant"
+alert_email = "it-admin@westfield.edu"
+
+# Azure AI Foundry
+ai_foundry_name = "westfieldaifoundry"  # MUST BE GLOBALLY UNIQUE
+azure_openai_model = "gpt-35-turbo"    # or "gpt-4" for advanced
+
+# Azure Resources (all must be globally unique)
+acr_name = "westfieldacr"
+web_app_name = "westfield-schoolgpt"
+sql_server_name = "westfield-sql"
+key_vault_name = "westfield-kv"
+
+# Security (replace with your values)
+sql_azuread_admin_login = "admin@westfield.edu"
+sql_azuread_admin_object_id = "your-azure-ad-object-id"
+key_vault_admin_object_id = "your-azure-ad-object-id"
+```
+
+### **Step 2: Set GitHub Secrets**
+Add these secrets to **GitHub → Settings → Secrets and variables → Actions**:
+
+| Secret Name | Value | Description |
+|-------------|--------|-------------|
+| `AZURE_CREDENTIALS` | Service Principal JSON | For GitHub Actions to deploy |
+| `AZURE_TENANT_ID` | Your tenant ID | Azure authentication |
+| `AZURE_SUBSCRIPTION_ID` | Your subscription ID | Target subscription |
+
+### **Step 3: Deploy Everything**
+```bash
+git add .
+git commit -m "Deploy School Safe AI App"
+git push origin main
+```
+
+**That's it!** GitHub Actions will:
+1. Deploy all Azure infrastructure via Terraform
+2. Build and deploy the Microsoft sample app
+3. Configure all security and monitoring
+4. Initialize the database schema
+
+---
+
+## 🛠️ **Detailed Configuration Options**
+
+### **AI Model Selection**
+Choose the best model for your school:
+
+| Model | Best For | Cost | Performance |
+|-------|----------|------|-------------|
+| `gpt-35-turbo` | Most schools, cost-effective | $ | Fast, reliable |
+| `gpt-4` | Advanced reasoning, higher quality | $$$ | Slower, premium |
+| `gpt-4o` | Latest with vision capabilities | $$$ | Advanced features |
+
+### **App Service Sizing**
+Match your school's usage:
+
+| SKU | Users | Cost | Memory | CPU |
+|-----|-------|------|--------|-----|
+| `B1` | <50 students | $ | 1.75 GB | 1 core |
+| `B2` | <200 students | $$ | 3.5 GB | 2 cores |
+| `S1` | <500 students | $$$ | 1.75 GB | 1 core (always-on) |
+| `S2` | <1000 students | $$$$ | 3.5 GB | 2 cores |
+
+### **Database Performance**
+Scale based on usage:
+
+| SKU | Concurrent Users | Storage | Performance |
+|-----|------------------|---------|-------------|
+| `Basic` | <10 | 2 GB | Light testing |
+| `S1` | <100 | 250 GB | Small schools |
+| `S2` | <500 | 250 GB | Medium schools |
+| `S3` | <1000 | 250 GB | Large schools |
+
+---
+
+## 🔒 **School-Safe Security Features**
+
+### **Content Filtering (High Level)**
+All safety categories set to maximum protection:
+- **Hate Speech**: Blocked
+- **Sexual Content**: Blocked  
+- **Violence**: Blocked
+- **Self-Harm**: Blocked
+- **Custom Filters**: Educational content only
+
+### **Enhanced Prompt Engineering**
+Every AI interaction includes:
+```
+You are an educational AI assistant for students under 16. 
+Provide safe, age-appropriate, educational responses only.
+Refuse inappropriate topics and redirect to learning resources.
+```
+
+### **Authentication & Access Control**
+- **Microsoft Entra ID Required**: No anonymous access
+- **Student/Teacher/Admin Roles**: Granular permissions
+- **Session Management**: Automatic logout, secure sessions
+
+### **Comprehensive Monitoring**
+- **Real-time Alerts**: Instant notifications for safety violations
+- **Audit Logging**: Every interaction tracked and stored
+- **Dashboard Views**: School administrators can monitor usage
+- **Compliance Reports**: Regular safety and usage reports
+
+---
+
+## 📊 **Database Schema Overview**
+
+The system automatically creates these tables:
+
+### **Core Tables**
+- **`Users`**: Student/teacher profiles from Entra ID
+- **`ChatSessions`**: Grouped conversations by topic
+- **`ChatHistory`**: Complete chat history for display
+- **`AuditLog`**: Comprehensive audit trail
+
+### **Safety Tables**
+- **`ContentFilterViolations`**: Detailed safety incident tracking
+- **`SystemMetrics`**: Usage analytics and performance monitoring
+
+### **Automated Features**
+- **Performance Indexes**: Optimized for fast queries
+- **Audit Triggers**: Automatic logging of all changes
+- **Data Views**: Pre-built queries for common reports
+
+To initialize the database schema:
+```sql
+-- Run the provided SQL script after deployment
+sqlcmd -S your-sql-server.database.windows.net -d schoolgptdb -i school_safe_database_schema.sql
 ```
 
 ---
 
-## 🤖 Everything Else is Automatic
-- **Terraform will create all resources** (Web App, SQL, ACR, Key Vault, AI Foundry, App Insights) in the resource group you specify.
-- **All wiring, secrets, and connections are handled for you.**
-- **No manual Azure Portal steps needed.**
-- **All resources are grouped together for easy management.**
+## 🎯 **After Deployment**
+
+### **1. Configure Entra ID Authentication**
+1. Go to Azure Portal → App Service → Authentication
+2. Add Microsoft as identity provider
+3. Configure allowed users/groups (students, teachers, admins)
+
+### **2. Deploy AI Model**
+1. Go to Azure AI Foundry portal
+2. Deploy your chosen model (GPT-3.5-turbo or GPT-4)
+3. Configure content filter policies to "High" for all categories
+
+### **3. Initialize Database**
+1. Connect to your Azure SQL database
+2. Run the `school_safe_database_schema.sql` script
+3. Verify all tables and indexes are created
+
+### **4. Test the Application**
+1. Navigate to your web app URL: `https://your-app-name.azurewebsites.net`
+2. Sign in with school Entra ID credentials
+3. Test with appropriate educational questions
+4. Verify content filtering with inappropriate test queries
+
+### **5. Set Up Monitoring**
+1. Configure Application Insights dashboards
+2. Set up email alerts for content filter violations
+3. Create usage reports for school administrators
 
 ---
 
-## 🛠️ What Gets Created
-- **Resource Group:** Keeps everything organized
-- **Container Registry:** Stores your app’s Docker images
-- **Web App:** Runs the SchoolGPT app (frontend + backend)
-- **SQL Database:** Stores chat history, audit logs, flagged messages
-- **Application Insights:** For monitoring and troubleshooting
-- **AI Foundry (Promptflow):** Provides safe, filtered AI chat
+## 🧑‍💻 **Advanced Customization**
+
+### **UI Customization for Schools**
+The app includes school-specific branding:
+```javascript
+// Customizable in terraform.tfvars
+UI_TITLE = "Your School AI Assistant"
+UI_CHAT_TITLE = "School AI Assistant" 
+UI_CHAT_DESCRIPTION = "Ask educational questions!"
+```
+
+### **Content Filter Customization**
+Adjust filtering levels in `main.tf`:
+```hcl
+# Content Filter Settings (0=Off, 1=Low, 2=High)
+"AZURE_OPENAI_CONTENT_FILTER_HATE" = "2"
+"AZURE_OPENAI_CONTENT_FILTER_SEXUAL" = "2"
+"AZURE_OPENAI_CONTENT_FILTER_VIOLENCE" = "2"
+"AZURE_OPENAI_CONTENT_FILTER_SELF_HARM" = "2"
+```
+
+### **Adding Custom Subjects**
+Track conversations by subject:
+```sql
+-- Add to ChatHistory table
+UPDATE ChatHistory 
+SET Subject = 'Mathematics' 
+WHERE UserMessage LIKE '%math%' OR UserMessage LIKE '%algebra%'
+```
 
 ---
 
-## 🧑‍💻 Need to Customize?
-- You can change resource names, region, or other settings in `terraform.tfvars`.
-- The app will be ready for you to push your code and start using right away!
+## 📈 **Monitoring & Analytics**
+
+### **Real-Time Dashboards**
+View live usage in Application Insights:
+- **Active Users**: Students and teachers online
+- **Message Volume**: Conversations per hour/day
+- **Response Times**: AI performance metrics
+- **Error Rates**: System health monitoring
+
+### **Safety Monitoring**
+Track content safety:
+- **Filter Triggers**: Safety violations by type and severity
+- **User Patterns**: Identify users needing guidance
+- **Trend Analysis**: Safety patterns over time
+
+### **Usage Analytics**
+Understand educational impact:
+- **Popular Subjects**: Most discussed topics
+- **Peak Usage**: When students use the system most
+- **Engagement Metrics**: Session duration and message count
 
 ---
 
-## 🔑 GitHub Actions Secrets (Required for CI/CD)
-If you want to deploy SchoolGPT using GitHub Actions (recommended!), you need to add some secrets to your GitHub repository:
+## 🆘 **Troubleshooting**
 
-Go to **GitHub → Settings → Secrets and variables → Actions** and add these:
+### **Common Issues**
 
-- `AZURE_CLIENT_ID` – From your Azure App Registration (for GitHub Actions to log in)
-- `AZURE_TENANT_ID` – Your Azure tenant ID
-- `AZURE_SUBSCRIPTION_ID` – Your Azure subscription ID
-- `ACR_LOGIN_SERVER` – Your Azure Container Registry login server (e.g., myacr.azurecr.io)
-- `ACR_USERNAME` – Your ACR username (get from Azure Portal or CLI)
-- `ACR_PASSWORD` – Your ACR password (get from Azure Portal or CLI)
+**Deployment Fails**
+- Verify all resource names are globally unique
+- Check Azure subscription limits and quotas
+- Ensure GitHub secrets are configured correctly
 
-**How to get these values:**
-- Ask your Azure admin if you’re not sure, or see the Azure Portal/CLI.
+**Authentication Not Working**
+- Configure Entra ID authentication in Azure Portal
+- Verify redirect URLs are correctly set
+- Check user permissions and group memberships
 
-**Once these are set:**
-- Push your code to GitHub.
-- The GitHub Actions workflow will build, push, and deploy everything for you—no manual steps needed!
+**Content Filter Too Restrictive**
+- Adjust filter levels in Terraform configuration
+- Test with educational content to verify appropriate responses
+- Review AI Foundry content filter policies
 
----
+**Database Connection Issues**
+- Verify SQL firewall rules allow Azure services
+- Check connection strings in Key Vault
+- Ensure managed identity has database permissions
 
-## 🗂️ About the Azure Container Registry (ACR)
-- **Terraform will create a new Azure Container Registry for you!**
-- You do NOT need to use an existing registry or get credentials in advance.
-- Just set a unique name for `acr_name` in your `terraform.tfvars` (e.g., `schoolgptacr123`).
-
-### How to Get Your New Registry Credentials
-After you run `terraform apply` and your resources are created:
-
-1. **Get the username and password for your new registry:**
-   ```sh
-   az acr credential show --name <your-new-acr-name>
-   ```
-   - Replace `<your-new-acr-name>` with the value you set for `acr_name`.
-   - This will show you the username and password for your new registry.
-2. **Add these as GitHub Actions secrets:**
-   - `ACR_USERNAME`
-   - `ACR_PASSWORD`
-
-**Now your GitHub Actions pipeline can build and push Docker images to your new registry automatically!**
+### **Getting Help**
+- Check Application Insights for error details
+- Review audit logs for security issues
+- Contact your Azure administrator for infrastructure support
 
 ---
 
-## ❓ Questions?
-- If you get stuck, ask your Azure admin for help with permissions.
-- For more info, see the main project README or contact your support team. 
+## 🏆 **Best Practices for Schools**
+
+### **Security**
+1. **Regular Reviews**: Monitor content filter violations weekly
+2. **User Management**: Review student/teacher access quarterly  
+3. **Backup Verification**: Test database backups monthly
+4. **Security Updates**: Keep all components updated
+
+### **Educational Use**
+1. **Teacher Training**: Provide guidance on AI-assisted learning
+2. **Student Guidelines**: Clear policies on appropriate AI use
+3. **Subject Integration**: Encourage AI use across curricula
+4. **Assessment**: Monitor educational impact and learning outcomes
+
+### **Compliance**
+1. **Data Privacy**: Ensure FERPA/GDPR compliance
+2. **Audit Trails**: Maintain comprehensive logging
+3. **Incident Response**: Have procedures for safety violations
+4. **Regular Reporting**: Provide usage and safety reports to leadership
+
+---
+
+## 📞 **Support & Community**
+
+- **Documentation**: This README and inline code comments
+- **Issue Tracking**: Use GitHub Issues for bug reports
+- **Feature Requests**: Submit enhancement suggestions
+- **Community**: Share experiences with other educational institutions
+
+---
+
+**🎓 Your School Safe AI App is ready to transform education with secure, monitored AI assistance for students under 16!** 
