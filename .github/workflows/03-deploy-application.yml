@@ -1,0 +1,230 @@
+name: 🚀 Deploy SchoolGPT Application
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+        - development
+      school_name:
+        description: 'School Name (for identification)'
+        required: true
+        type: string
+      force_rebuild:
+        description: 'Force rebuild Docker image (even if no code changes)'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches:
+      - main
+    paths:
+      - 'sample-app-aoai-chatGPT/**'
+      - '.github/workflows/03-deploy-application.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-app:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+      - name: 🏫 Starting Application Deployment
+        run: |
+          echo "🏫 Deploying SchoolGPT Application"
+          echo "🌍 Environment: ${{ github.event.inputs.environment || 'production' }}"
+          echo "🏫 School: ${{ github.event.inputs.school_name || 'Auto-deployment from push' }}"
+          echo "🔄 Force Rebuild: ${{ github.event.inputs.force_rebuild || 'false' }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 🔍 Get Infrastructure Information
+        id: get-infra
+        run: |
+          # Get infrastructure details from Terraform state
+          cd infra
+          
+          # Initialize Terraform to access remote state
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TERRAFORM_RESOURCE_GROUP_BACKEND }}" \
+            -backend-config="storage_account_name=${{ secrets.TERRAFORM_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TERRAFORM_CONTAINER }}" \
+            -backend-config="key=${{ github.event.inputs.environment || 'production' }}.terraform.tfstate"
+          
+          # Get outputs from Terraform
+          ACR_NAME=$(terraform output -raw container_registry_name 2>/dev/null || echo "")
+          WEB_APP_NAME=$(terraform output -raw web_app_name 2>/dev/null || echo "")
+          RESOURCE_GROUP=$(terraform output -raw resource_group_name 2>/dev/null || echo "")
+          KEY_VAULT_NAME=$(terraform output -raw key_vault_name 2>/dev/null || echo "")
+          
+          if [ -z "$ACR_NAME" ] || [ -z "$WEB_APP_NAME" ] || [ -z "$RESOURCE_GROUP" ]; then
+            echo "❌ Could not get infrastructure information from Terraform state"
+            echo "Please ensure the infrastructure is deployed first"
+            exit 1
+          fi
+          
+          echo "✅ Found infrastructure:"
+          echo "  ACR: $ACR_NAME"
+          echo "  Web App: $WEB_APP_NAME"
+          echo "  Resource Group: $RESOURCE_GROUP"
+          echo "  Key Vault: $KEY_VAULT_NAME"
+          
+          # Set outputs for next steps
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+          echo "web_app_name=$WEB_APP_NAME" >> $GITHUB_OUTPUT
+          echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
+          echo "key_vault_name=$KEY_VAULT_NAME" >> $GITHUB_OUTPUT
+
+      - name: 🔑 Get ACR Credentials from Key Vault
+        id: get-credentials
+        run: |
+          ACR_USERNAME=$(az keyvault secret show --name "acr-username" --vault-name "${{ steps.get-infra.outputs.key_vault_name }}" --query value -o tsv)
+          ACR_PASSWORD=$(az keyvault secret show --name "acr-password" --vault-name "${{ steps.get-infra.outputs.key_vault_name }}" --query value -o tsv)
+          
+          echo "✅ Retrieved ACR credentials from Key Vault"
+          echo "::add-mask::$ACR_PASSWORD"
+          
+          echo "acr_username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "acr_password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
+      - name: 🐳 Login to Azure Container Registry
+        run: |
+          echo "${{ steps.get-credentials.outputs.acr_password }}" | docker login ${{ steps.get-infra.outputs.acr_name }}.azurecr.io \
+            --username ${{ steps.get-credentials.outputs.acr_username }} \
+            --password-stdin
+
+      - name: 🔍 Check if image needs rebuild
+        id: check-rebuild
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          ACR_NAME="${{ steps.get-infra.outputs.acr_name }}"
+          
+          FORCE_REBUILD="${{ github.event.inputs.force_rebuild }}"
+          
+          if [ "$FORCE_REBUILD" == "true" ]; then
+            echo "🔄 Force rebuild requested"
+            echo "rebuild=true" >> $GITHUB_OUTPUT
+            echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Check if image with this tag already exists
+          if az acr repository show-tags --name "$ACR_NAME" --repository schoolgpt-app --query "[?@=='$IMAGE_TAG']" | grep -q "$IMAGE_TAG"; then
+            echo "✅ Image with tag $IMAGE_TAG already exists, skipping build"
+            echo "rebuild=false" >> $GITHUB_OUTPUT
+          else
+            echo "🔄 Image with tag $IMAGE_TAG not found, building new image"
+            echo "rebuild=true" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: 🏗️ Build Docker Image
+        if: steps.check-rebuild.outputs.rebuild == 'true'
+        run: |
+          echo "🏗️ Building Docker image for SchoolGPT..."
+          cd sample-app-aoai-chatGPT
+          
+          docker build \
+            -f WebApp.Dockerfile \
+            -t ${{ steps.get-infra.outputs.acr_name }}.azurecr.io/schoolgpt-app:${{ steps.check-rebuild.outputs.image_tag }} \
+            -t ${{ steps.get-infra.outputs.acr_name }}.azurecr.io/schoolgpt-app:latest \
+            .
+
+      - name: 📤 Push Docker Image
+        if: steps.check-rebuild.outputs.rebuild == 'true'
+        run: |
+          echo "📤 Pushing Docker image to ACR..."
+          docker push ${{ steps.get-infra.outputs.acr_name }}.azurecr.io/schoolgpt-app:${{ steps.check-rebuild.outputs.image_tag }}
+          docker push ${{ steps.get-infra.outputs.acr_name }}.azurecr.io/schoolgpt-app:latest
+
+      - name: 🔄 Update Web App
+        run: |
+          echo "🔄 Updating Web App to use new image..."
+          
+          # Update the web app to use the new image
+          az webapp config container set \
+            --name ${{ steps.get-infra.outputs.web_app_name }} \
+            --resource-group ${{ steps.get-infra.outputs.resource_group }} \
+            --docker-custom-image-name ${{ steps.get-infra.outputs.acr_name }}.azurecr.io/schoolgpt-app:${{ steps.check-rebuild.outputs.image_tag }}
+          
+          # Update app settings to ensure latest configuration
+          az webapp config appsettings set \
+            --name ${{ steps.get-infra.outputs.web_app_name }} \
+            --resource-group ${{ steps.get-infra.outputs.resource_group }} \
+            --settings DOCKER_CUSTOM_IMAGE_NAME="${{ steps.get-infra.outputs.acr_name }}.azurecr.io/schoolgpt-app:${{ steps.check-rebuild.outputs.image_tag }}"
+
+      - name: 🔄 Restart Web App
+        run: |
+          echo "🔄 Restarting Web App to apply changes..."
+          az webapp restart \
+            --name ${{ steps.get-infra.outputs.web_app_name }} \
+            --resource-group ${{ steps.get-infra.outputs.resource_group }}
+
+      - name: ⏱️ Wait for Deployment
+        run: |
+          echo "⏱️ Waiting for application to start..."
+          sleep 60
+          
+          echo "🔍 Checking application health..."
+          APP_URL="https://${{ steps.get-infra.outputs.web_app_name }}.azurewebsites.net"
+          
+          # Try to get a response from the app (allow up to 5 minutes)
+          for i in {1..10}; do
+            if curl -s -f "$APP_URL" > /dev/null; then
+              echo "✅ Application is responding at $APP_URL"
+              break
+            else
+              echo "⏳ Attempt $i/10: Application not ready yet, waiting 30 seconds..."
+              sleep 30
+            fi
+          done
+
+      - name: 📊 Deployment Summary
+        run: |
+          echo "✅ SchoolGPT Application Deployment Complete!"
+          echo ""
+          echo "🏫 School: ${{ github.event.inputs.school_name || 'Auto-deployment' }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment || 'production' }}"
+          echo "🐳 Image Tag: ${{ steps.check-rebuild.outputs.image_tag }}"
+          echo "🔄 Rebuilt: ${{ steps.check-rebuild.outputs.rebuild }}"
+          echo ""
+          echo "🌐 Application URL: https://${{ steps.get-infra.outputs.web_app_name }}.azurewebsites.net"
+          echo ""
+          echo "📋 Next Steps:"
+          echo "1. Visit the application URL above"
+          echo "2. Configure authentication if not already done"
+          echo "3. Test with sample educational queries"
+          echo "4. Share with teachers and students!"
+
+      - name: 🔍 Application Logs (Last 5 minutes)
+        if: failure()
+        run: |
+          echo "🔍 Getting recent application logs for troubleshooting..."
+          az webapp log download \
+            --name ${{ steps.get-infra.outputs.web_app_name }} \
+            --resource-group ${{ steps.get-infra.outputs.resource_group }} \
+            --log-file app-logs.zip || echo "Could not download logs"
+          
+          if [ -f app-logs.zip ]; then
+            unzip -q app-logs.zip
+            echo "📋 Recent Docker logs:"
+            find LogFiles -name "*docker*.log" -exec tail -20 {} \; 2>/dev/null || echo "No Docker logs found"
+          fi 

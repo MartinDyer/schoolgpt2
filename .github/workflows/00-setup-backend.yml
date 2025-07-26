@@ -1,0 +1,153 @@
+name: 🔧 Setup SchoolGPT Backend Storage
+
+on:
+  workflow_dispatch:
+    inputs:
+      school_name:
+        description: 'School Name (e.g., Lincoln Elementary)'
+        required: true
+        type: string
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+        - development
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  setup-backend:
+    runs-on: ubuntu-latest
+    outputs:
+      storage_account_name: ${{ steps.create-backend.outputs.storage_account_name }}
+      container_name: ${{ steps.create-backend.outputs.container_name }}
+      
+    steps:
+      - name: 🏫 Welcome Message
+        run: |
+          echo "🏫 Setting up SchoolGPT for: ${{ github.event.inputs.school_name }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo "📦 This will create Azure Storage for Terraform state management"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 🔧 Create Terraform Backend Storage
+        id: create-backend
+        run: |
+          # Generate unique names for backend storage
+          SCHOOL_PREFIX=$(echo "${{ github.event.inputs.school_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-8)
+          RANDOM_SUFFIX=$(openssl rand -hex 3)
+          STORAGE_ACCOUNT="${SCHOOL_PREFIX}tfstate${RANDOM_SUFFIX}"
+          RESOURCE_GROUP="${SCHOOL_PREFIX}-${{ github.event.inputs.environment }}-rg"
+          CONTAINER_NAME="tfstate"
+          
+          echo "🏗️ Creating backend storage:"
+          echo "  Resource Group: $RESOURCE_GROUP"
+          echo "  Storage Account: $STORAGE_ACCOUNT"
+          echo "  Container: $CONTAINER_NAME"
+          
+          # Create resource group for backend
+          az group create --name "$RESOURCE_GROUP-backend" --location "uksouth" --tags \
+            Environment="${{ github.event.inputs.environment }}" \
+            School="${{ github.event.inputs.school_name }}" \
+            Purpose="Terraform Backend Storage"
+          
+          # Create storage account for Terraform state
+          az storage account create \
+            --name "$STORAGE_ACCOUNT" \
+            --resource-group "$RESOURCE_GROUP-backend" \
+            --location "uksouth" \
+            --sku Standard_LRS \
+            --encryption-services blob \
+            --https-only true \
+            --min-tls-version TLS1_2 \
+            --tags \
+              Environment="${{ github.event.inputs.environment }}" \
+              School="${{ github.event.inputs.school_name }}" \
+              Purpose="Terraform State Storage"
+          
+          # Get storage account key
+          ACCOUNT_KEY=$(az storage account keys list --resource-group "$RESOURCE_GROUP-backend" --account-name "$STORAGE_ACCOUNT" --query '[0].value' -o tsv)
+          
+          # Create blob container
+          az storage container create \
+            --name "$CONTAINER_NAME" \
+            --account-name "$STORAGE_ACCOUNT" \
+            --account-key "$ACCOUNT_KEY"
+          
+          # Output for next jobs
+          echo "storage_account_name=$STORAGE_ACCOUNT" >> $GITHUB_OUTPUT
+          echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
+          echo "resource_group_backend=$RESOURCE_GROUP-backend" >> $GITHUB_OUTPUT
+          
+          # Store in GitHub environment variables for future workflows
+          echo "TERRAFORM_STORAGE_ACCOUNT=$STORAGE_ACCOUNT" >> $GITHUB_ENV
+          echo "TERRAFORM_CONTAINER=$CONTAINER_NAME" >> $GITHUB_ENV
+          echo "TERRAFORM_RESOURCE_GROUP_BACKEND=$RESOURCE_GROUP-backend" >> $GITHUB_ENV
+
+      - name: 📝 Update Backend Configuration
+        run: |
+          # Create backend configuration file
+          cat > infra/backend.tf << EOF
+          terraform {
+            backend "azurerm" {
+              resource_group_name  = "${{ steps.create-backend.outputs.resource_group_backend }}"
+              storage_account_name = "${{ steps.create-backend.outputs.storage_account_name }}"
+              container_name       = "${{ steps.create-backend.outputs.container_name }}"
+              key                  = "${{ github.event.inputs.environment }}.terraform.tfstate"
+            }
+          }
+          EOF
+          
+          echo "✅ Created backend.tf configuration"
+          cat infra/backend.tf
+
+      - name: 🔑 Store Backend Configuration as Secrets
+        run: |
+          # These will be used by subsequent workflows
+          echo "Backend storage created successfully!"
+          echo "Storage Account: ${{ steps.create-backend.outputs.storage_account_name }}"
+          echo "Container: ${{ steps.create-backend.outputs.container_name }}"
+          echo ""
+          echo "ℹ️ Add these as GitHub Repository Secrets:"
+          echo "TERRAFORM_STORAGE_ACCOUNT: ${{ steps.create-backend.outputs.storage_account_name }}"
+          echo "TERRAFORM_CONTAINER: ${{ steps.create-backend.outputs.container_name }}"
+          echo "TERRAFORM_RESOURCE_GROUP_BACKEND: ${{ steps.create-backend.outputs.resource_group_backend }}"
+
+      - name: 📤 Commit Backend Configuration
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add infra/backend.tf
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "🔧 Add Terraform backend configuration for ${{ github.event.inputs.school_name }}"
+            git push
+          fi
+
+      - name: 🎉 Setup Complete
+        run: |
+          echo "✅ Backend storage setup complete!"
+          echo ""
+          echo "📋 Next Steps:"
+          echo "1. Add the following GitHub Repository Secrets:"
+          echo "   - TERRAFORM_STORAGE_ACCOUNT: ${{ steps.create-backend.outputs.storage_account_name }}"
+          echo "   - TERRAFORM_CONTAINER: ${{ steps.create-backend.outputs.container_name }}"
+          echo "   - TERRAFORM_RESOURCE_GROUP_BACKEND: ${{ steps.create-backend.outputs.resource_group_backend }}"
+          echo ""
+          echo "2. Run the 'Deploy SchoolGPT' workflow to deploy your infrastructure"
+          echo ""
+          echo "🏫 Your SchoolGPT is ready to deploy!" 

@@ -1,0 +1,208 @@
+name: 🗑️ Destroy SchoolGPT Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy'
+        required: true
+        type: choice
+        options:
+        - staging
+        - development
+        - production
+      school_name:
+        description: 'School Name (must match deployment)'
+        required: true
+        type: string
+      confirmation:
+        description: 'Type "DESTROY" to confirm (case sensitive)'
+        required: true
+        type: string
+      destroy_backend:
+        description: 'Also destroy Terraform backend storage (CAUTION: This removes state files!)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  safety-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛡️ Safety Confirmation Check
+        run: |
+          if [ "${{ github.event.inputs.confirmation }}" != "DESTROY" ]; then
+            echo "❌ Safety confirmation failed!"
+            echo "You must type 'DESTROY' exactly to confirm destruction."
+            exit 1
+          fi
+          
+          echo "⚠️  DANGER ZONE ⚠️"
+          echo "This will PERMANENTLY DESTROY all SchoolGPT resources for:"
+          echo "🏫 School: ${{ github.event.inputs.school_name }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo "🗑️ Backend Storage: ${{ github.event.inputs.destroy_backend }}"
+          echo ""
+          echo "✅ Safety confirmation passed"
+
+      - name: 🚫 Production Warning
+        if: github.event.inputs.environment == 'production'
+        run: |
+          echo "🚨 WARNING: You are about to destroy PRODUCTION environment!"
+          echo "This will affect live users and cannot be undone!"
+          echo "Please ensure this is intentional."
+          sleep 10
+
+  destroy:
+    runs-on: ubuntu-latest
+    needs: safety-check
+    environment: 
+      name: ${{ github.event.inputs.environment }}-destroy
+      url: https://portal.azure.com
+    
+    steps:
+      - name: 🗑️ Starting Destruction Process
+        run: |
+          echo "🗑️ Starting destruction of SchoolGPT infrastructure"
+          echo "🏫 School: ${{ github.event.inputs.school_name }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Terraform Azure credentials
+        run: |
+          echo "ARM_CLIENT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}" >> $GITHUB_ENV
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init
+        run: |
+          cd infra
+          echo "🔄 Initializing Terraform with backend..."
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TERRAFORM_RESOURCE_GROUP_BACKEND }}" \
+            -backend-config="storage_account_name=${{ secrets.TERRAFORM_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TERRAFORM_CONTAINER }}" \
+            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate"
+
+      - name: 📋 Show Current Resources
+        run: |
+          cd infra
+          echo "📋 Current resources that will be destroyed:"
+          terraform show || echo "No resources found or state file missing"
+
+      - name: Terraform Destroy Plan
+        run: |
+          cd infra
+          echo "📋 Creating destruction plan..."
+          terraform plan -destroy \
+            -var-file=terraform.tfvars \
+            -var="environment=${{ github.event.inputs.environment }}" \
+            -var="school_name=${{ github.event.inputs.school_name }}" \
+            -out=destroy.tfplan
+
+      - name: ⏸️ Final Confirmation
+        run: |
+          echo "⏸️ This is your FINAL CHANCE to abort!"
+          echo "The following resources will be PERMANENTLY DESTROYED:"
+          echo ""
+          echo "🏫 School: ${{ github.event.inputs.school_name }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo ""
+          echo "Proceeding with destruction in 30 seconds..."
+          echo "Cancel this workflow now if you want to abort!"
+          sleep 30
+
+      - name: 🗑️ Execute Terraform Destroy
+        run: |
+          cd infra
+          echo "🗑️ Executing Terraform destroy..."
+          terraform apply destroy.tfplan
+
+      - name: 🗑️ Destroy Backend Storage
+        if: github.event.inputs.destroy_backend == 'true' || github.event.inputs.destroy_backend == true
+        run: |
+          echo "🗑️ Destroying Terraform backend storage..."
+          echo "⚠️  This will remove ALL state files for ALL environments!"
+          
+          # Delete the backend resource group (this contains the storage account)
+          BACKEND_RG="${{ secrets.TERRAFORM_RESOURCE_GROUP_BACKEND }}"
+          
+          if az group exists --name "$BACKEND_RG"; then
+            echo "Deleting resource group: $BACKEND_RG"
+            az group delete --name "$BACKEND_RG" --yes --no-wait
+            echo "✅ Backend storage deletion initiated"
+          else
+            echo "ℹ️ Backend resource group not found or already deleted"
+          fi
+
+      - name: 🧹 Cleanup Local Files
+        run: |
+          echo "🧹 Cleaning up backend configuration..."
+          if [ -f "infra/backend.tf" ]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            rm -f infra/backend.tf
+            git add infra/backend.tf
+            git commit -m "🗑️ Remove backend configuration after destruction" || echo "No changes to commit"
+            git push || echo "Nothing to push"
+          fi
+
+      - name: 📊 Destruction Summary
+        run: |
+          echo "✅ SchoolGPT destruction completed!"
+          echo ""
+          echo "🗑️ Destroyed resources for:"
+          echo "🏫 School: ${{ github.event.inputs.school_name }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo "🗑️ Backend Storage: ${{ github.event.inputs.destroy_backend }}"
+          echo ""
+          echo "ℹ️ Next Steps:"
+          if [ "${{ github.event.inputs.destroy_backend }}" == "true" ]; then
+            echo "- Run 'Setup SchoolGPT Backend Storage' if you want to deploy again"
+          fi
+          echo "- All Azure resources have been removed"
+          echo "- No ongoing costs will be incurred"
+
+      - name: 📝 Create Destruction Report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `## 🗑️ SchoolGPT Infrastructure Destruction Report
+            
+            **School:** \`${{ github.event.inputs.school_name }}\`
+            **Environment:** \`${{ github.event.inputs.environment }}\`
+            **Backend Storage Destroyed:** \`${{ github.event.inputs.destroy_backend }}\`
+            **Destroyed By:** @${{ github.actor }}
+            **Timestamp:** ${new Date().toISOString()}
+            
+            ### ✅ Destruction Completed Successfully
+            
+            All SchoolGPT infrastructure resources have been permanently removed from Azure.
+            
+            ${${{ github.event.inputs.destroy_backend }} ? '⚠️ **Backend storage was also destroyed** - you will need to run the setup workflow again before deploying.' : 'ℹ️ Backend storage was preserved for future deployments.'}
+            
+            ### Next Steps
+            - All Azure resources have been cleaned up
+            - No ongoing costs will be incurred
+            ${${{ github.event.inputs.destroy_backend }} ? '- Run "Setup SchoolGPT Backend Storage" workflow to deploy again' : '- Infrastructure can be redeployed using existing backend'}
+            `;
+            
+            // You could create an issue or comment here if needed
+            console.log(output); 
