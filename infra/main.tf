@@ -127,7 +127,7 @@ resource "azurerm_linux_web_app" "main" {
     always_on = true
     ftps_state = "Disabled"
     application_stack {
-      docker_image_name        = "${var.acr_login_server}/${var.docker_image}:${var.docker_tag}"
+      docker_image_name        = "${var.docker_image}:${var.docker_tag}"
       docker_registry_url      = "https://${azurerm_container_registry.acr.login_server}"
       docker_registry_username = azurerm_container_registry.acr.admin_username
       docker_registry_password = azurerm_container_registry.acr.admin_password

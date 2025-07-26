@@ -1,0 +1,66 @@
+#################################################################
+# School Safe AI App - Configuration Template
+# Copy this file to 'terraform.tfvars' and customize for your school
+#################################################################
+
+# Azure Subscription & Tenant Information
+# Get these from Azure Portal → Subscriptions
+azure_subscription_id = "YOUR-SUBSCRIPTION-ID-HERE"           # Required: Your Azure subscription ID
+azure_tenant_id       = "YOUR-TENANT-ID-HERE"                # Required: Your Azure tenant ID
+
+# School-Specific Configuration
+school_name = "YourSchool AI Assistant"                       # Displayed in the app interface
+alert_email = "it@yourschool.edu"                            # IT admin email for alerts
+location    = "uksouth"                                       # Azure region (uksouth, eastus, westeurope, etc.)
+
+# Resource Naming (Must be globally unique across all Azure)
+resource_group_name   = "yourschool-ai-rg"                   # Resource group name
+ai_foundry_name      = "yourschool-ai-foundry"               # Must be globally unique
+ai_foundry_subdomain = "yourschool-ai"                       # Must be globally unique  
+acr_name             = "yourschoolacr"                        # Must be globally unique (alphanumeric only)
+web_app_name         = "yourschool-ai-app"                   # Must be globally unique
+sql_server_name      = "yourschool-ai-sql"                   # Must be globally unique
+key_vault_name       = "yourschool-ai-kv"                    # Must be globally unique
+
+# School Administrator (Get Object ID from Azure Portal → Azure Active Directory → Users)
+sql_azuread_admin_login     = "admin@yourschool.edu"         # Your Azure AD admin email
+sql_azuread_admin_object_id = "YOUR-ADMIN-OBJECT-ID-HERE"    # Azure AD Object ID for admin
+key_vault_admin_object_id   = "YOUR-ADMIN-OBJECT-ID-HERE"    # Same as above
+
+# Security & Database
+sql_password = "YourStrongP@ssw0rd123!"                       # Strong password for SQL admin
+
+# AI Model Configuration
+azure_openai_model                  = "gpt-35-turbo"         # Options: gpt-35-turbo, gpt-4
+azure_openai_model_version          = "1106"                 # Model version
+azure_openai_model_deployment_name  = "school-safe-chat"     # Deployment name
+model_capacity                      = 120                     # Tokens per minute (adjust based on school size)
+
+# Performance Tiers (Adjust based on school size and budget)
+app_service_sku = "B2"                                        # B1(small), B2(medium), S1(large), S2(x-large)
+sql_sku_name    = "S1"                                        # Basic, S0, S1, S2, S3
+
+#################################################################
+# School Branding & Customization
+#################################################################
+
+# These will be added in the enhanced version for school customization
+# school_logo_url = "https://yourschool.edu/logo.png"
+# school_primary_color = "#0066CC"  
+# school_secondary_color = "#FFFFFF"
+# welcome_message = "Welcome to YourSchool's AI Assistant!"
+
+#################################################################
+# Quick Start Guide:
+#################################################################
+#
+# 1. Replace ALL "YOUR-" placeholders with your actual values
+# 2. Ensure all resource names are globally unique
+# 3. Run: terraform init
+# 4. Run: terraform plan
+# 5. Run: terraform apply
+# 6. Configure GitHub secrets for CI/CD
+# 7. Push code to trigger application deployment
+#
+# Need help? See README.md for detailed instructions
+################################################################# 
