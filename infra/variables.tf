@@ -113,4 +113,10 @@ variable "backend_container_name" {
   description = "Blob container name for Terraform state (Default: tfstate)"
   type        = string
   default     = "tfstate"
+}
+
+variable "azure_openai_model" {
+  description = "Azure OpenAI model deployment name for AI Foundry (e.g., gpt-35-turbo, gpt-4). (Default: gpt-35-turbo)"
+  type        = string
+  default     = "gpt-35-turbo"
 } 

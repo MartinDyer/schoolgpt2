@@ -66,17 +66,26 @@ resource "azurerm_linux_web_app" "main" {
     always_on = true
   }
   app_settings = {
-    "WEBSITES_PORT"         = "8080"
+    "WEBSITES_PORT"         = "80"
     # Docker image and registry settings
     "DOCKER_CUSTOM_IMAGE_NAME"        = "${var.acr_login_server}/${var.docker_image}:${var.docker_tag}"
-    # App-specific settings
-    "PROMPTFLOW_ENDPOINT"             = azurerm_cognitive_account.promptflow.endpoint
-    "PROMPTFLOW_API_KEY"              = azurerm_cognitive_account.promptflow.primary_access_key
+    # Azure AI Foundry (OpenAI) settings - compatible with Microsoft sample app
+    "AZURE_OPENAI_ENDPOINT"           = azurerm_cognitive_account.promptflow.endpoint
+    "AZURE_OPENAI_KEY"                = azurerm_cognitive_account.promptflow.primary_access_key
+    "AZURE_OPENAI_MODEL"              = var.azure_openai_model
+    "AZURE_OPENAI_TEMPERATURE"        = "0"
+    "AZURE_OPENAI_TOP_P"              = "1.0"
+    "AZURE_OPENAI_MAX_TOKENS"         = "1000"
+    "AZURE_OPENAI_SYSTEM_MESSAGE"     = "You are a helpful AI assistant for students under 16. Provide safe, educational, and age-appropriate responses."
+    # SQL Database settings
     "SQL_SERVER"                      = azurerm_mssql_server.main.fully_qualified_domain_name
     "SQL_DB"                          = azurerm_mssql_database.main.name
     "SQL_USER"                        = var.sql_admin
     "SQL_PASSWORD"                    = var.sql_password
+    # Monitoring settings
     "APPINSIGHTS_INSTRUMENTATIONKEY"  = azurerm_application_insights.main.instrumentation_key
+    # Authentication and security
+    "AUTH_ENABLED"                    = "true"
   }
 }
 
@@ -166,13 +175,16 @@ output "app_insights_key" {
   sensitive = true
 }
 
-# Output Promptflow endpoint and key for reference
-output "promptflow_endpoint" {
+# Output Azure AI Foundry (OpenAI) endpoint and key for reference
+output "azure_openai_endpoint" {
   value = azurerm_cognitive_account.promptflow.endpoint
 }
-output "promptflow_api_key" {
+output "azure_openai_api_key" {
   value     = azurerm_cognitive_account.promptflow.primary_access_key
   sensitive = true
+}
+output "azure_openai_model" {
+  value = var.azure_openai_model
 }
 
 output "key_vault_name" {

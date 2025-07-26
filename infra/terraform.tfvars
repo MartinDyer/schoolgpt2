@@ -32,3 +32,6 @@ azure_subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
 
 backend_storage_account_name = "schoolgptstg"
 backend_container_name      = "tfstate"
+
+# Azure AI Foundry Model Configuration
+azure_openai_model = "gpt-35-turbo"

@@ -58,9 +58,9 @@ jobs:
           cd infra
           echo "SQL_CONN=$(terraform output -raw sql_connection_string)" >> $GITHUB_ENV
 
-      - name: Set SQL connection string in App Service
+      - name: Update Web App to use new Docker image
         run: |
           az webapp config appsettings set \
             -g schoolgpt-rg \
             -n schoolgpt-webapp123 \
-            --settings AZURE_SQL_SERVER_CONNECTION_STRING="${{ env.SQL_CONN }}" 
+            --settings DOCKER_CUSTOM_IMAGE_NAME="schoolgptacr123.azurecr.io/schoolgpt-app:${{ github.sha }}" 
