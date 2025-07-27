@@ -46,28 +46,38 @@ jobs:
       - name: 🔧 Create Terraform Backend Storage
         id: create-backend
         run: |
-          # Generate unique names for backend storage
+          # Generate unique names for backend storage based on school
           SCHOOL_PREFIX=$(echo "${{ github.event.inputs.school_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-8)
           RANDOM_SUFFIX=$(openssl rand -hex 3)
           STORAGE_ACCOUNT="${SCHOOL_PREFIX}tfstate${RANDOM_SUFFIX}"
-          RESOURCE_GROUP="${SCHOOL_PREFIX}-${{ github.event.inputs.environment }}-rg"
+          
+          # Use the main resource group from terraform.tfvars (where infrastructure will live)
+          MAIN_RESOURCE_GROUP=$(grep -E '^resource_group_name' infra/terraform.tfvars | cut -d'"' -f2 || echo "${SCHOOL_PREFIX}-${{ github.event.inputs.environment }}-rg")
           CONTAINER_NAME="tfstate"
           
-          echo "🏗️ Creating backend storage:"
-          echo "  Resource Group: $RESOURCE_GROUP"
-          echo "  Storage Account: $STORAGE_ACCOUNT"
-          echo "  Container: $CONTAINER_NAME"
+          echo "🏗️ Creating backend storage for any school:"
+          echo "  🏫 School: ${{ github.event.inputs.school_name }}"
+          echo "  📦 Main Resource Group: $MAIN_RESOURCE_GROUP"
+          echo "  💾 Storage Account: $STORAGE_ACCOUNT"
+          echo "  📁 Container: $CONTAINER_NAME"
+          echo "  🌍 Environment: ${{ github.event.inputs.environment }}"
           
-          # Create resource group for backend
-          az group create --name "$RESOURCE_GROUP-backend" --location "uksouth" --tags \
-            Environment="${{ github.event.inputs.environment }}" \
-            School="${{ github.event.inputs.school_name }}" \
-            Purpose="Terraform Backend Storage"
+          # Check if main resource group exists, if not create it
+          if ! az group show --name "$MAIN_RESOURCE_GROUP" >/dev/null 2>&1; then
+            echo "📦 Creating main resource group: $MAIN_RESOURCE_GROUP"
+            az group create --name "$MAIN_RESOURCE_GROUP" --location "uksouth" --tags \
+              Environment="${{ github.event.inputs.environment }}" \
+              School="${{ github.event.inputs.school_name }}" \
+              Purpose="SchoolGPT Infrastructure"
+          else
+            echo "✅ Main resource group already exists: $MAIN_RESOURCE_GROUP"
+          fi
           
-          # Create storage account for Terraform state
+          # Create storage account for Terraform state in the MAIN resource group
+          echo "💾 Creating storage account for Terraform state..."
           az storage account create \
             --name "$STORAGE_ACCOUNT" \
-            --resource-group "$RESOURCE_GROUP-backend" \
+            --resource-group "$MAIN_RESOURCE_GROUP" \
             --location "uksouth" \
             --sku Standard_LRS \
             --encryption-services blob \
@@ -79,7 +89,7 @@ jobs:
               Purpose="Terraform State Storage"
           
           # Get storage account key
-          ACCOUNT_KEY=$(az storage account keys list --resource-group "$RESOURCE_GROUP-backend" --account-name "$STORAGE_ACCOUNT" --query '[0].value' -o tsv)
+          ACCOUNT_KEY=$(az storage account keys list --resource-group "$MAIN_RESOURCE_GROUP" --account-name "$STORAGE_ACCOUNT" --query '[0].value' -o tsv)
           
           # Create blob container
           az storage container create \
@@ -90,16 +100,14 @@ jobs:
           # Output for next jobs
           echo "storage_account_name=$STORAGE_ACCOUNT" >> $GITHUB_OUTPUT
           echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
-          echo "resource_group_backend=$RESOURCE_GROUP-backend" >> $GITHUB_OUTPUT
-          
-          # Store in GitHub environment variables for future workflows
-          echo "TERRAFORM_STORAGE_ACCOUNT=$STORAGE_ACCOUNT" >> $GITHUB_ENV
-          echo "TERRAFORM_CONTAINER=$CONTAINER_NAME" >> $GITHUB_ENV
-          echo "TERRAFORM_RESOURCE_GROUP_BACKEND=$RESOURCE_GROUP-backend" >> $GITHUB_ENV
+          echo "resource_group_backend=$MAIN_RESOURCE_GROUP" >> $GITHUB_OUTPUT
+          echo "school_prefix=$SCHOOL_PREFIX" >> $GITHUB_OUTPUT
 
-      - name: 📝 Update Backend Configuration
+      - name: 📝 Update Configuration for This School
         run: |
-          # Create backend configuration file
+          echo "🔧 Customizing configuration for: ${{ github.event.inputs.school_name }}"
+          
+          # Create dynamic backend configuration
           cat > infra/backend.tf << EOF
           terraform {
             backend "azurerm" {
@@ -111,8 +119,36 @@ jobs:
           }
           EOF
           
-          echo "✅ Created backend.tf configuration"
+          # Update terraform.tfvars with school-specific values if it's a template
+          if grep -q "REPLACE_WITH_YOUR" infra/terraform.tfvars 2>/dev/null; then
+            echo "📝 Updating terraform.tfvars with school-specific values..."
+            
+            # Generate unique resource names for this school
+            SCHOOL_PREFIX="${{ steps.create-backend.outputs.school_prefix }}"
+            RANDOM_SUFFIX=$(openssl rand -hex 2)
+            
+            # Update terraform.tfvars with school-specific values
+            sed -i "s/resource_group_name.*=.*/resource_group_name   = \"${{ steps.create-backend.outputs.resource_group_backend }}\"/" infra/terraform.tfvars
+            sed -i "s/school_name.*=.*/school_name = \"${{ github.event.inputs.school_name }}\"/" infra/terraform.tfvars
+            sed -i "s/ai_foundry_name.*=.*/ai_foundry_name      = \"${SCHOOL_PREFIX}aifoundry${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+            sed -i "s/ai_foundry_subdomain.*=.*/ai_foundry_subdomain = \"${SCHOOL_PREFIX}ai${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+                         sed -i "s/acr_name.*=.*/acr_name              = \"${SCHOOL_PREFIX}acr${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+             sed -i "s/web_app_name.*=.*/web_app_name          = \"${SCHOOL_PREFIX}webapp${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+             sed -i "s/sql_server_name.*=.*/sql_server_name       = \"${SCHOOL_PREFIX}sqlsrv${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+             sed -i "s/key_vault_name.*=.*/key_vault_name            = \"${SCHOOL_PREFIX}kv${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+             sed -i "s/acr_login_server.*=.*/acr_login_server      = \"${SCHOOL_PREFIX}acr${RANDOM_SUFFIX}.azurecr.io\"/" infra/terraform.tfvars
+            
+            echo "✅ Updated terraform.tfvars with unique names for ${{ github.event.inputs.school_name }}"
+          fi
+          
+          echo "✅ Created backend.tf configuration:"
           cat infra/backend.tf
+          
+          echo ""
+          echo "📋 Resource names for ${{ github.event.inputs.school_name }}:"
+          echo "  🏫 School: ${{ github.event.inputs.school_name }}"
+          echo "  📦 Resource Group: ${{ steps.create-backend.outputs.resource_group_backend }}"
+          echo "  💾 Backend Storage: ${{ steps.create-backend.outputs.storage_account_name }}"
 
       - name: ✅ Backend Configuration Complete
         run: |
@@ -124,26 +160,32 @@ jobs:
           echo "🔧 Backend configuration has been automatically saved to infra/backend.tf"
           echo "📦 Other workflows will automatically read this configuration - no manual setup needed!"
 
-      - name: 📤 Commit Backend Configuration
+      - name: 📤 Commit School Configuration
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add infra/backend.tf
+          git add infra/backend.tf infra/terraform.tfvars
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "🔧 Add Terraform backend configuration for ${{ github.event.inputs.school_name }}"
+            git commit -m "🏫 Configure SchoolGPT for ${{ github.event.inputs.school_name }} (${{ github.event.inputs.environment }})"
             git push
           fi
 
-      - name: 🎉 Setup Complete
+      - name: 🎉 Setup Complete - Ready for Any School!
         run: |
-          echo "🎉 Backend storage setup complete!"
+          echo "🎉 SchoolGPT setup complete for ${{ github.event.inputs.school_name }}!"
           echo ""
-          echo "✅ Everything is automated - no manual steps needed!"
+          echo "✅ 100% Automated - Any school can use this template!"
           echo ""
-          echo "📋 Next Steps:"
-          echo "1. Run the '🔄 Import Existing Resources' workflow (if you have existing resources)"
-          echo "2. Or run the '🚀 Deploy SchoolGPT Infrastructure' workflow for new deployment"
+          echo "🏫 What was created for ${{ github.event.inputs.school_name }}:"
+          echo "  📦 Resource Group: ${{ steps.create-backend.outputs.resource_group_backend }}"
+          echo "  💾 Backend Storage: ${{ steps.create-backend.outputs.storage_account_name }}"
+          echo "  🔧 Custom Configuration: Automatically generated"
           echo ""
-          echo "🏫 Your SchoolGPT backend is ready!" 
+          echo "📋 Next Steps for ${{ github.event.inputs.school_name }}:"
+          echo "1. Run '🔄 Import Existing Resources' workflow (if infrastructure already exists)"
+          echo "2. Or run '🚀 Deploy SchoolGPT Infrastructure' workflow (for new deployment)"
+          echo ""
+          echo "🚀 This template is now ready for any school to use!"
+          echo "   Each school gets their own unique resource names automatically!" 
