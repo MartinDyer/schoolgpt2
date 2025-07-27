@@ -155,12 +155,23 @@ jobs:
             
             *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
             
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
+            // Only create comment if running from PR/issue context
+            if (context.issue && context.issue.number) {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              });
+              console.log("Plan results posted as comment");
+            } else {
+              // For workflow_dispatch, just log the results
+              console.log("=".repeat(50));
+              console.log("TERRAFORM PLAN RESULTS");
+              console.log("=".repeat(50));
+              console.log(output);
+              console.log("=".repeat(50));
+            }
 
       - name: 🚦 Plan Status Check
         if: steps.plan.outcome == 'failure'
