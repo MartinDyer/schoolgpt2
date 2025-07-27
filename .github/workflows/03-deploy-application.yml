@@ -55,6 +55,37 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Set Terraform Azure credentials
+        run: |
+          echo "ARM_CLIENT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}" >> $GITHUB_ENV
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+          terraform_wrapper: false
+
+      - name: 🔧 Check Backend Configuration
+        run: |
+          echo "🔍 Checking if backend secrets are configured..."
+          if [ -z "${{ secrets.TERRAFORM_STORAGE_ACCOUNT }}" ] || [ -z "${{ secrets.TERRAFORM_CONTAINER }}" ] || [ -z "${{ secrets.TERRAFORM_RESOURCE_GROUP_BACKEND }}" ]; then
+            echo "❌ Backend configuration secrets are missing!"
+            echo ""
+            echo "Please set up these GitHub Repository Secrets:"
+            echo "  - TERRAFORM_STORAGE_ACCOUNT"
+            echo "  - TERRAFORM_CONTAINER" 
+            echo "  - TERRAFORM_RESOURCE_GROUP_BACKEND"
+            echo ""
+            echo "💡 Run the 'Setup SchoolGPT Backend Storage' workflow first to create these values"
+            echo "   Then add them as GitHub Repository Secrets"
+            exit 1
+          else
+            echo "✅ Backend configuration secrets found"
+          fi
+
       - name: 🔍 Get Infrastructure Information
         id: get-infra
         run: |
