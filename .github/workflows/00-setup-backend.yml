@@ -51,8 +51,8 @@ jobs:
           RANDOM_SUFFIX=$(openssl rand -hex 3)
           STORAGE_ACCOUNT="${SCHOOL_PREFIX}tfstate${RANDOM_SUFFIX}"
           
-          # Use the main resource group from terraform.tfvars (where infrastructure will live)
-          MAIN_RESOURCE_GROUP=$(grep -E '^resource_group_name' infra/terraform.tfvars | cut -d'"' -f2 || echo "${SCHOOL_PREFIX}-${{ github.event.inputs.environment }}-rg")
+          # Create unique resource group names for this school
+          MAIN_RESOURCE_GROUP="${SCHOOL_PREFIX}-${{ github.event.inputs.environment }}-rg"
           CONTAINER_NAME="tfstate"
           
           echo "🏗️ Creating backend storage for any school:"
@@ -119,8 +119,8 @@ jobs:
           }
           EOF
           
-          # Update terraform.tfvars with school-specific values if it's a template
-          if grep -q "REPLACE_WITH_YOUR" infra/terraform.tfvars 2>/dev/null; then
+          # Update terraform.tfvars with school-specific values if it contains placeholders
+          if grep -q -E "(REPLACE_WITH_YOUR|REPLACE_AUTO_GENERATED|REPLACE_WITH_SCHOOL_NAME)" infra/terraform.tfvars 2>/dev/null; then
             echo "📝 Updating terraform.tfvars with school-specific values..."
             
             # Generate unique resource names for this school
@@ -128,15 +128,15 @@ jobs:
             RANDOM_SUFFIX=$(openssl rand -hex 2)
             
             # Update terraform.tfvars with school-specific values
-            sed -i "s/resource_group_name.*=.*/resource_group_name   = \"${{ steps.create-backend.outputs.resource_group_backend }}\"/" infra/terraform.tfvars
+            sed -i "s/resource_group_name.*=.*/resource_group_name   = \"$MAIN_RESOURCE_GROUP\"/" infra/terraform.tfvars
             sed -i "s/school_name.*=.*/school_name = \"${{ github.event.inputs.school_name }}\"/" infra/terraform.tfvars
             sed -i "s/ai_foundry_name.*=.*/ai_foundry_name      = \"${SCHOOL_PREFIX}aifoundry${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
             sed -i "s/ai_foundry_subdomain.*=.*/ai_foundry_subdomain = \"${SCHOOL_PREFIX}ai${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
-                         sed -i "s/acr_name.*=.*/acr_name              = \"${SCHOOL_PREFIX}acr${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
-             sed -i "s/web_app_name.*=.*/web_app_name          = \"${SCHOOL_PREFIX}webapp${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
-             sed -i "s/sql_server_name.*=.*/sql_server_name       = \"${SCHOOL_PREFIX}sqlsrv${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
-             sed -i "s/key_vault_name.*=.*/key_vault_name            = \"${SCHOOL_PREFIX}kv${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
-             sed -i "s/acr_login_server.*=.*/acr_login_server      = \"${SCHOOL_PREFIX}acr${RANDOM_SUFFIX}.azurecr.io\"/" infra/terraform.tfvars
+            sed -i "s/acr_name.*=.*/acr_name              = \"${SCHOOL_PREFIX}acr${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+            sed -i "s/web_app_name.*=.*/web_app_name          = \"${SCHOOL_PREFIX}webapp${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+            sed -i "s/sql_server_name.*=.*/sql_server_name       = \"${SCHOOL_PREFIX}sqlsrv${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+            sed -i "s/key_vault_name.*=.*/key_vault_name            = \"${SCHOOL_PREFIX}kv${RANDOM_SUFFIX}\"/" infra/terraform.tfvars
+            sed -i "s/acr_login_server.*=.*/acr_login_server      = \"${SCHOOL_PREFIX}acr${RANDOM_SUFFIX}.azurecr.io\"/" infra/terraform.tfvars
             
             echo "✅ Updated terraform.tfvars with unique names for ${{ github.event.inputs.school_name }}"
           fi

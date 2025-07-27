@@ -5,18 +5,18 @@
 # Fill in your details below for one-click deployment
 
 # Basic Infrastructure (Will be auto-generated for each school)
-resource_group_name   = "schoolgpt-rg"
+resource_group_name   = "REPLACE_AUTO_GENERATED"
 location              = "uksouth"
 azure_subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"  # REPLACE_WITH_YOUR_SUBSCRIPTION_ID
 azure_tenant_id       = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea"  # REPLACE_WITH_YOUR_TENANT_ID
 
 # School Configuration (Auto-filled by setup workflow)
-school_name = "testingschool123"
+school_name = "REPLACE_WITH_SCHOOL_NAME"
 alert_email = "admin@myschool.edu"                        # REPLACE: Your school IT admin email
 
 # Azure AI Foundry Configuration (Auto-generated unique names)
-ai_foundry_name      = "testingsaifoundryd458"
-ai_foundry_subdomain = "testingsaid458"
+ai_foundry_name      = "REPLACE_AUTO_GENERATED"
+ai_foundry_subdomain = "REPLACE_AUTO_GENERATED"
 azure_openai_model   = "gpt-35-turbo"            # Options: gpt-35-turbo, gpt-4, gpt-4o
 azure_openai_model_version = "1106"
 azure_openai_model_deployment_name = "school-safe-chat"
@@ -24,18 +24,18 @@ model_sku_name       = "Standard"
 model_capacity       = 120  # Tokens per minute
 
 # Container Registry and App Service (Auto-generated unique names)
-acr_name              = "testingsacrd458"
+acr_name              = "REPLACE_AUTO_GENERATED"
 app_service_plan_name = "schoolgpt-asp"
 app_service_sku       = "B2"                     # B1/B2/B3 for basic, S1/S2/S3 for standard
-web_app_name          = "testingswebappd458"
-acr_login_server      = "testingsacrd458.azurecr.io"
+web_app_name          = "REPLACE_AUTO_GENERATED"
+acr_login_server      = "REPLACE_AUTO_GENERATED.azurecr.io"
 
 # Docker Configuration
 docker_image = "schoolgpt-app"
 docker_tag   = "latest"
 
 # SQL Database Configuration (Auto-generated unique names)
-sql_server_name       = "testingssqlsrvd458"
+sql_server_name       = "REPLACE_AUTO_GENERATED"
 sql_admin             = "sqladminuser"
 sql_password          = "MyStrongP@ssw0rd123!"   # REPLACE: Use a secure password
 sql_db_name           = "schoolgptdb"
@@ -47,7 +47,7 @@ sql_azuread_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb"  # REPLACE_
 app_insights_name = "schoolgpt-ai"
 
 # Azure Key Vault (Auto-generated unique names)
-key_vault_name            = "testingskvd458"
+key_vault_name            = "REPLACE_AUTO_GENERATED"
 key_vault_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb"  # REPLACE_WITH_YOUR_OBJECT_ID
 
 # Terraform Backend Storage
