@@ -21,7 +21,7 @@ azure_openai_model   = "gpt-35-turbo"            # Options: gpt-35-turbo, gpt-4,
 azure_openai_model_version = "1106"
 azure_openai_model_deployment_name = "school-safe-chat"
 model_sku_name       = "Standard"
-model_capacity       = 120  # Tokens per minute
+model_capacity       = 80   # Tokens per minute (reduced to fit quota)
 
 # Container Registry and App Service (Auto-generated unique names)
 acr_name              = "testschoolacr2024"
