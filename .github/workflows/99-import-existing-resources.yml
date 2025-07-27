@@ -276,6 +276,24 @@ jobs:
         run: |
           cd infra
           
+          # Check if we have any actual infrastructure to import (beyond just resource group)
+          AI_EXISTS="${{ steps.check-resources.outputs.ai_exists }}"
+          ACR_EXISTS="${{ steps.check-resources.outputs.acr_exists }}"
+          WEBAPP_EXISTS="${{ steps.check-resources.outputs.webapp_exists }}"
+          SQL_EXISTS="${{ steps.check-resources.outputs.sql_exists }}"
+          KV_EXISTS="${{ steps.check-resources.outputs.kv_exists }}"
+          ASP_EXISTS="${{ steps.check-resources.outputs.asp_exists }}"
+          
+          if [ "$AI_EXISTS" = "false" ] && [ "$ACR_EXISTS" = "false" ] && [ "$WEBAPP_EXISTS" = "false" ] && [ "$SQL_EXISTS" = "false" ] && [ "$KV_EXISTS" = "false" ] && [ "$ASP_EXISTS" = "false" ]; then
+            echo "ℹ️ No SchoolGPT infrastructure found to import"
+            echo "📦 Only found resource group and possibly storage accounts"
+            echo "🚀 This is normal for a fresh setup - infrastructure will be created during deployment"
+            echo ""
+            echo "✅ Resource group '${{ github.event.inputs.resource_group_name }}' is ready for deployment"
+            echo "🎯 You can now run the 'Deploy SchoolGPT Infrastructure' workflow to create all resources"
+            exit 0
+          fi
+          
           # Use discovered resource names from previous step and inputs
           RESOURCE_GROUP="${{ github.event.inputs.resource_group_name }}"
           SUBSCRIPTION_ID=$(grep -E '^azure_subscription_id' terraform.tfvars | cut -d'"' -f2)
@@ -371,7 +389,6 @@ jobs:
           echo "✅ Import process completed!"
 
       - name: 🧪 Validate State After Import
-        continue-on-error: true
         id: validate
         run: |
           cd infra
@@ -383,18 +400,26 @@ jobs:
           
           echo ""
           echo "🔍 Running Terraform plan to check for differences..."
-          terraform plan -var-file=terraform.tfvars -detailed-exitcode
           
+          # Run terraform plan and capture exit code without failing
+          set +e  # Don't exit on error
+          terraform plan -var-file=terraform.tfvars -detailed-exitcode
           PLAN_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+          
+          echo ""
+          echo "📊 Plan completed with exit code: $PLAN_EXIT_CODE"
+          
           if [ $PLAN_EXIT_CODE -eq 0 ]; then
             echo "✅ Perfect! No changes needed - all resources are properly imported"
             echo "validation_result=success" >> $GITHUB_OUTPUT
           elif [ $PLAN_EXIT_CODE -eq 2 ]; then
+            echo "✅ Plan successful with changes detected"
             echo "⚠️ Some differences detected - this is normal after import"
-            echo "Run the Deploy Infrastructure workflow to sync any configuration differences"
+            echo "🚀 You can now run the Deploy Infrastructure workflow to apply these changes"
             echo "validation_result=changes_detected" >> $GITHUB_OUTPUT
           else
-            echo "❌ Terraform plan failed"
+            echo "❌ Terraform plan failed with exit code: $PLAN_EXIT_CODE"
             echo "validation_result=failed" >> $GITHUB_OUTPUT
             exit 1
           fi
