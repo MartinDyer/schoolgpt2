@@ -453,6 +453,23 @@ output "next_steps" {
   ]
 }
 
+# Additional outputs for CI/CD workflows
+output "container_registry_name" {
+  value = azurerm_container_registry.acr.name
+}
+
+output "web_app_name" {
+  value = azurerm_linux_web_app.main.name
+}
+
+output "resource_group_name" {
+  value = azurerm_resource_group.main.name
+}
+
+output "key_vault_name" {
+  value = azurerm_key_vault.main.name
+}
+
 # Sensitive outputs
 output "ai_foundry_api_key" {
   value     = azurerm_cognitive_account.ai_foundry.primary_access_key

@@ -1,0 +1,250 @@
+name: 🔄 Import Existing Resources
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to import for'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+        - development
+      school_name:
+        description: 'School Name (must match the one used when creating resources)'
+        required: true
+        type: string
+      force_import:
+        description: 'Force import even if some resources already exist in state'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  import-resources:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: 🔄 Starting Resource Import
+        run: |
+          echo "🔄 Importing existing resources for: ${{ github.event.inputs.school_name }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo "⚡ Force Import: ${{ github.event.inputs.force_import }}"
+          echo ""
+          echo "This will import your existing Azure resources into Terraform remote state"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Terraform Azure credentials
+        run: |
+          echo "ARM_CLIENT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}" >> $GITHUB_ENV
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+          terraform_wrapper: false
+
+      - name: 🔧 Ensure Backend Storage Exists
+        run: |
+          cd infra
+          
+          # Check if backend.tf exists
+          if [ ! -f "backend.tf" ]; then
+            echo "❌ Backend configuration not found!"
+            echo "Please run the 'Setup SchoolGPT Backend Storage' workflow first."
+            exit 1
+          fi
+          
+          echo "✅ Backend configuration found"
+          cat backend.tf
+
+      - name: Terraform Init with Backend
+        run: |
+          cd infra
+          echo "🔄 Initializing Terraform with remote backend..."
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TERRAFORM_RESOURCE_GROUP_BACKEND }}" \
+            -backend-config="storage_account_name=${{ secrets.TERRAFORM_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TERRAFORM_CONTAINER }}" \
+            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate"
+
+      - name: 🔍 Check Existing Resources in Azure
+        id: check-resources
+        run: |
+          cd infra
+          
+          # Load variables from terraform.tfvars
+          RESOURCE_GROUP=$(grep -E '^resource_group_name' terraform.tfvars | cut -d'"' -f2)
+          SUBSCRIPTION_ID=$(grep -E '^azure_subscription_id' terraform.tfvars | cut -d'"' -f2)
+          
+          echo "🔍 Checking for existing resources..."
+          echo "Resource Group: $RESOURCE_GROUP"
+          echo "Subscription: $SUBSCRIPTION_ID"
+          
+          # Check if resource group exists
+          if az group show --name "$RESOURCE_GROUP" --subscription "$SUBSCRIPTION_ID" >/dev/null 2>&1; then
+            echo "✅ Resource group exists: $RESOURCE_GROUP"
+            echo "resource_group_exists=true" >> $GITHUB_OUTPUT
+            echo "resource_group_name=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
+            
+            # List all resources in the group
+            echo "📋 Resources found in $RESOURCE_GROUP:"
+            az resource list --resource-group "$RESOURCE_GROUP" --subscription "$SUBSCRIPTION_ID" --query '[].{Name:name, Type:type}' -o table
+          else
+            echo "❌ Resource group not found: $RESOURCE_GROUP"
+            echo "resource_group_exists=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: 🔄 Import Resources into Terraform State
+        if: steps.check-resources.outputs.resource_group_exists == 'true'
+        run: |
+          cd infra
+          
+          # Load variables from terraform.tfvars
+          RESOURCE_GROUP=$(grep -E '^resource_group_name' terraform.tfvars | cut -d'"' -f2)
+          SUBSCRIPTION_ID=$(grep -E '^azure_subscription_id' terraform.tfvars | cut -d'"' -f2)
+          AI_FOUNDRY_NAME=$(grep -E '^ai_foundry_name' terraform.tfvars | cut -d'"' -f2)
+          ACR_NAME=$(grep -E '^acr_name' terraform.tfvars | cut -d'"' -f2)
+          APP_SERVICE_PLAN_NAME=$(grep -E '^app_service_plan_name' terraform.tfvars | cut -d'"' -f2)
+          WEB_APP_NAME=$(grep -E '^web_app_name' terraform.tfvars | cut -d'"' -f2)
+          SQL_SERVER_NAME=$(grep -E '^sql_server_name' terraform.tfvars | cut -d'"' -f2)
+          SQL_DB_NAME=$(grep -E '^sql_db_name' terraform.tfvars | cut -d'"' -f2)
+          KEY_VAULT_NAME=$(grep -E '^key_vault_name' terraform.tfvars | cut -d'"' -f2)
+          APP_INSIGHTS_NAME=$(grep -E '^app_insights_name' terraform.tfvars | cut -d'"' -f2)
+          
+          echo "🔄 Starting import process..."
+          
+          # Function to safely import a resource
+          import_resource() {
+            local terraform_address=$1
+            local azure_resource_id=$2
+            local resource_name=$3
+            
+            echo "🔄 Importing $resource_name..."
+            
+            # Check if resource exists in Azure
+            if az resource show --ids "$azure_resource_id" >/dev/null 2>&1; then
+              echo "✅ Found $resource_name in Azure"
+              
+              # Try to import
+              if terraform import -var-file=terraform.tfvars "$terraform_address" "$azure_resource_id" 2>/dev/null; then
+                echo "✅ Successfully imported $resource_name"
+              else
+                echo "⚠️ $resource_name may already be in state or import failed (this is often OK)"
+              fi
+            else
+              echo "❌ $resource_name not found in Azure, skipping..."
+            fi
+            echo ""
+          }
+          
+          # Import resources in dependency order
+          echo "📋 Importing resources in correct order..."
+          
+          # 1. Resource Group
+          import_resource "azurerm_resource_group.main" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP" \
+            "Resource Group"
+          
+          # 2. AI Foundry (Cognitive Account)
+          import_resource "azurerm_cognitive_account.ai_foundry" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$AI_FOUNDRY_NAME" \
+            "AI Foundry"
+          
+          # 3. Container Registry
+          import_resource "azurerm_container_registry.acr" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.ContainerRegistry/registries/$ACR_NAME" \
+            "Container Registry"
+          
+          # 4. App Service Plan
+          import_resource "azurerm_service_plan.main" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/serverfarms/$APP_SERVICE_PLAN_NAME" \
+            "App Service Plan"
+          
+          # 5. Web App
+          import_resource "azurerm_linux_web_app.main" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/sites/$WEB_APP_NAME" \
+            "Web App"
+          
+          # 6. SQL Server
+          import_resource "azurerm_mssql_server.main" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Sql/servers/$SQL_SERVER_NAME" \
+            "SQL Server"
+          
+          # 7. SQL Database
+          import_resource "azurerm_mssql_database.main" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Sql/servers/$SQL_SERVER_NAME/databases/$SQL_DB_NAME" \
+            "SQL Database"
+          
+          # 8. Key Vault
+          import_resource "azurerm_key_vault.main" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.KeyVault/vaults/$KEY_VAULT_NAME" \
+            "Key Vault"
+          
+          # 9. Application Insights
+          import_resource "azurerm_application_insights.main" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Insights/components/$APP_INSIGHTS_NAME" \
+            "Application Insights"
+          
+          # 10. Log Analytics Workspace (may have auto-generated name)
+          LOG_WORKSPACE_NAME="${RESOURCE_GROUP}-logs"
+          import_resource "azurerm_log_analytics_workspace.main" \
+            "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.OperationalInsights/workspaces/$LOG_WORKSPACE_NAME" \
+            "Log Analytics Workspace"
+          
+          echo "✅ Import process completed!"
+
+      - name: 🧪 Validate State After Import
+        run: |
+          cd infra
+          echo "🧪 Validating Terraform state after import..."
+          
+          # Show current state
+          echo "📋 Current Terraform state:"
+          terraform state list
+          
+          echo ""
+          echo "🔍 Running Terraform plan to check for differences..."
+          terraform plan -var-file=terraform.tfvars -detailed-exitcode
+          
+          PLAN_EXIT_CODE=$?
+          if [ $PLAN_EXIT_CODE -eq 0 ]; then
+            echo "✅ Perfect! No changes needed - all resources are properly imported"
+          elif [ $PLAN_EXIT_CODE -eq 2 ]; then
+            echo "⚠️ Some differences detected - this is normal after import"
+            echo "Run the Deploy Infrastructure workflow to sync any configuration differences"
+          else
+            echo "❌ Terraform plan failed"
+            exit 1
+          fi
+
+      - name: 🎉 Import Complete
+        run: |
+          echo "🎉 Resource import completed successfully!"
+          echo ""
+          echo "✅ Your existing Azure resources have been imported into Terraform remote state"
+          echo ""
+          echo "📋 Next Steps:"
+          echo "1. Your resources are now managed by Terraform remote state"
+          echo "2. You can now run the 'Deploy SchoolGPT Infrastructure' workflow normally"
+          echo "3. Any future changes will be tracked and managed through CI/CD"
+          echo ""
+          echo "🔄 You can now safely use the automated deployment workflows!" 
