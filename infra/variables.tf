@@ -24,6 +24,13 @@ variable "azure_tenant_id" {
   type        = string
 }
 
+# Environment Configuration
+variable "environment" {
+  description = "Environment name (e.g., production, staging, development). (Default: production)"
+  type        = string
+  default     = "production"
+}
+
 # School Configuration
 variable "school_name" {
   description = "Name of the school (used for UI customization). (Default: School AI Assistant)"
