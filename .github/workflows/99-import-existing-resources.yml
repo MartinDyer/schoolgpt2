@@ -16,6 +16,10 @@ on:
         description: 'School Name (must match the one used when creating resources)'
         required: true
         type: string
+      resource_group_name:
+        description: 'Actual Resource Group name to import (e.g., schoolgpt-rg)'
+        required: true
+        type: string
       force_import:
         description: 'Force import even if some resources already exist in state'
         required: false
@@ -36,9 +40,10 @@ jobs:
         run: |
           echo "🔄 Importing existing resources for: ${{ github.event.inputs.school_name }}"
           echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo "📦 Resource Group: ${{ github.event.inputs.resource_group_name }}"
           echo "⚡ Force Import: ${{ github.event.inputs.force_import }}"
           echo ""
-          echo "This will import your existing Azure resources into Terraform remote state"
+          echo "This will discover and import your existing Azure resources into Terraform remote state"
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -117,13 +122,14 @@ jobs:
         run: |
           cd infra
           
-          # Load variables from terraform.tfvars
-          RESOURCE_GROUP=$(grep -E '^resource_group_name' terraform.tfvars | cut -d'"' -f2)
+          # Use provided resource group name and subscription from terraform.tfvars
+          RESOURCE_GROUP="${{ github.event.inputs.resource_group_name }}"
           SUBSCRIPTION_ID=$(grep -E '^azure_subscription_id' terraform.tfvars | cut -d'"' -f2)
           
           echo "🔍 Checking for existing resources..."
           echo "Resource Group: $RESOURCE_GROUP"
           echo "Subscription: $SUBSCRIPTION_ID"
+          echo "School Name: ${{ github.event.inputs.school_name }}"
           
           # Check if resource group exists
           if az group show --name "$RESOURCE_GROUP" --subscription "$SUBSCRIPTION_ID" >/dev/null 2>&1; then
@@ -134,27 +140,69 @@ jobs:
             # List all resources in the group
             echo "📋 Resources found in $RESOURCE_GROUP:"
             az resource list --resource-group "$RESOURCE_GROUP" --subscription "$SUBSCRIPTION_ID" --query '[].{Name:name, Type:type}' -o table
+            
+            # Discover actual resource names from Azure (instead of terraform.tfvars placeholders)
+            echo "🔍 Discovering actual resource names..."
+            AI_FOUNDRY_NAME=$(az cognitiveservices account list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            ACR_NAME=$(az acr list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            WEB_APP_NAME=$(az webapp list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            SQL_SERVER_NAME=$(az sql server list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            KEY_VAULT_NAME=$(az keyvault list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            APP_SERVICE_PLAN_NAME=$(az appservice plan list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            
+            echo "discovered_ai_foundry=$AI_FOUNDRY_NAME" >> $GITHUB_OUTPUT
+            echo "discovered_acr=$ACR_NAME" >> $GITHUB_OUTPUT  
+            echo "discovered_webapp=$WEB_APP_NAME" >> $GITHUB_OUTPUT
+            echo "discovered_sql_server=$SQL_SERVER_NAME" >> $GITHUB_OUTPUT
+            echo "discovered_key_vault=$KEY_VAULT_NAME" >> $GITHUB_OUTPUT
+            echo "discovered_app_plan=$APP_SERVICE_PLAN_NAME" >> $GITHUB_OUTPUT
+            
+            echo "📋 Discovered resources:"
+            echo "  AI Foundry: $AI_FOUNDRY_NAME"
+            echo "  Container Registry: $ACR_NAME"
+            echo "  Web App: $WEB_APP_NAME" 
+            echo "  SQL Server: $SQL_SERVER_NAME"
+            echo "  Key Vault: $KEY_VAULT_NAME"
+            echo "  App Service Plan: $APP_SERVICE_PLAN_NAME"
           else
             echo "❌ Resource group not found: $RESOURCE_GROUP"
             echo "resource_group_exists=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
+      - name: 📝 Update terraform.tfvars with Discovered Resources
+        if: steps.check-resources.outputs.resource_group_exists == 'true'
+        run: |
+          cd infra
+          echo "📝 Updating terraform.tfvars with discovered resource names..."
+          
+          # Update terraform.tfvars with actual discovered resource names
+          sed -i "s/resource_group_name.*=.*/resource_group_name   = \"${{ github.event.inputs.resource_group_name }}\"/" terraform.tfvars
+          sed -i "s/school_name.*=.*/school_name = \"${{ github.event.inputs.school_name }}\"/" terraform.tfvars
+          sed -i "s/ai_foundry_name.*=.*/ai_foundry_name      = \"${{ steps.check-resources.outputs.discovered_ai_foundry }}\"/" terraform.tfvars
+          sed -i "s/acr_name.*=.*/acr_name              = \"${{ steps.check-resources.outputs.discovered_acr }}\"/" terraform.tfvars
+          sed -i "s/web_app_name.*=.*/web_app_name          = \"${{ steps.check-resources.outputs.discovered_webapp }}\"/" terraform.tfvars
+          sed -i "s/sql_server_name.*=.*/sql_server_name       = \"${{ steps.check-resources.outputs.discovered_sql_server }}\"/" terraform.tfvars
+          sed -i "s/key_vault_name.*=.*/key_vault_name            = \"${{ steps.check-resources.outputs.discovered_key_vault }}\"/" terraform.tfvars
+          sed -i "s/acr_login_server.*=.*/acr_login_server      = \"${{ steps.check-resources.outputs.discovered_acr }}.azurecr.io\"/" terraform.tfvars
+          
+          echo "✅ Updated terraform.tfvars with discovered values"
+
       - name: 🔄 Import Resources into Terraform State
         if: steps.check-resources.outputs.resource_group_exists == 'true'
         run: |
           cd infra
           
-          # Load variables from terraform.tfvars
-          RESOURCE_GROUP=$(grep -E '^resource_group_name' terraform.tfvars | cut -d'"' -f2)
+          # Use discovered resource names from previous step and inputs
+          RESOURCE_GROUP="${{ github.event.inputs.resource_group_name }}"
           SUBSCRIPTION_ID=$(grep -E '^azure_subscription_id' terraform.tfvars | cut -d'"' -f2)
-          AI_FOUNDRY_NAME=$(grep -E '^ai_foundry_name' terraform.tfvars | cut -d'"' -f2)
-          ACR_NAME=$(grep -E '^acr_name' terraform.tfvars | cut -d'"' -f2)
-          APP_SERVICE_PLAN_NAME=$(grep -E '^app_service_plan_name' terraform.tfvars | cut -d'"' -f2)
-          WEB_APP_NAME=$(grep -E '^web_app_name' terraform.tfvars | cut -d'"' -f2)
-          SQL_SERVER_NAME=$(grep -E '^sql_server_name' terraform.tfvars | cut -d'"' -f2)
+          AI_FOUNDRY_NAME="${{ steps.check-resources.outputs.discovered_ai_foundry }}"
+          ACR_NAME="${{ steps.check-resources.outputs.discovered_acr }}"
+          APP_SERVICE_PLAN_NAME="${{ steps.check-resources.outputs.discovered_app_plan }}"
+          WEB_APP_NAME="${{ steps.check-resources.outputs.discovered_webapp }}"
+          SQL_SERVER_NAME="${{ steps.check-resources.outputs.discovered_sql_server }}"
           SQL_DB_NAME=$(grep -E '^sql_db_name' terraform.tfvars | cut -d'"' -f2)
-          KEY_VAULT_NAME=$(grep -E '^key_vault_name' terraform.tfvars | cut -d'"' -f2)
+          KEY_VAULT_NAME="${{ steps.check-resources.outputs.discovered_key_vault }}"
           APP_INSIGHTS_NAME=$(grep -E '^app_insights_name' terraform.tfvars | cut -d'"' -f2)
           
           echo "🔄 Starting import process..."
