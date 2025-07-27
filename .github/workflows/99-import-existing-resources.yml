@@ -143,12 +143,65 @@ jobs:
             
             # Discover actual resource names from Azure (instead of terraform.tfvars placeholders)
             echo "🔍 Discovering actual resource names..."
-            AI_FOUNDRY_NAME=$(az cognitiveservices account list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            
+            # More robust discovery with detailed logging
+            echo "  🤖 Checking for AI Foundry (Cognitive Services)..."
+            AI_FOUNDRY_NAME=$(az cognitiveservices account list --resource-group "$RESOURCE_GROUP" --query '[?kind==`OpenAI`].name | [0]' -o tsv 2>/dev/null || echo "")
+            echo "    Found: ${AI_FOUNDRY_NAME:-'❌ Not found'}"
+            
+            echo "  📦 Checking for Container Registry..."
             ACR_NAME=$(az acr list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            echo "    Found: ${ACR_NAME:-'❌ Not found'}"
+            
+            echo "  🌐 Checking for Web App..."
             WEB_APP_NAME=$(az webapp list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            echo "    Found: ${WEB_APP_NAME:-'❌ Not found'}"
+            
+            echo "  🗄️ Checking for SQL Server..."
             SQL_SERVER_NAME=$(az sql server list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            echo "    Found: ${SQL_SERVER_NAME:-'❌ Not found'}"
+            
+            echo "  🔐 Checking for Key Vault..."
             KEY_VAULT_NAME=$(az keyvault list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            echo "    Found: ${KEY_VAULT_NAME:-'❌ Not found'}"
+            
+            echo "  📋 Checking for App Service Plan..."
             APP_SERVICE_PLAN_NAME=$(az appservice plan list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv 2>/dev/null || echo "")
+            echo "    Found: ${APP_SERVICE_PLAN_NAME:-'❌ Not found'}"
+            
+            # Generate fallback names for missing resources based on school name
+            SCHOOL_SAFE_NAME=$(echo "${{ github.event.inputs.school_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+            
+            # Set fallback values for empty discoveries
+            if [ -z "$AI_FOUNDRY_NAME" ]; then
+              AI_FOUNDRY_NAME="${SCHOOL_SAFE_NAME}aifoundry$(date +%s | tail -c 4)"
+              echo "  ⚠️ AI Foundry not found - will use fallback: $AI_FOUNDRY_NAME"
+            fi
+            
+            if [ -z "$ACR_NAME" ]; then
+              ACR_NAME="${SCHOOL_SAFE_NAME}acr$(date +%s | tail -c 4)"
+              echo "  ⚠️ Container Registry not found - will use fallback: $ACR_NAME"
+            fi
+            
+            if [ -z "$WEB_APP_NAME" ]; then
+              WEB_APP_NAME="${SCHOOL_SAFE_NAME}webapp$(date +%s | tail -c 4)"
+              echo "  ⚠️ Web App not found - will use fallback: $WEB_APP_NAME"
+            fi
+            
+            if [ -z "$SQL_SERVER_NAME" ]; then
+              SQL_SERVER_NAME="${SCHOOL_SAFE_NAME}sql$(date +%s | tail -c 4)"
+              echo "  ⚠️ SQL Server not found - will use fallback: $SQL_SERVER_NAME"
+            fi
+            
+            if [ -z "$KEY_VAULT_NAME" ]; then
+              KEY_VAULT_NAME="${SCHOOL_SAFE_NAME}kv$(date +%s | tail -c 4)"
+              echo "  ⚠️ Key Vault not found - will use fallback: $KEY_VAULT_NAME"
+            fi
+            
+            if [ -z "$APP_SERVICE_PLAN_NAME" ]; then
+              APP_SERVICE_PLAN_NAME="${SCHOOL_SAFE_NAME}-asp"
+              echo "  ⚠️ App Service Plan not found - will use fallback: $APP_SERVICE_PLAN_NAME"
+            fi
             
             echo "discovered_ai_foundry=$AI_FOUNDRY_NAME" >> $GITHUB_OUTPUT
             echo "discovered_acr=$ACR_NAME" >> $GITHUB_OUTPUT  
@@ -156,6 +209,21 @@ jobs:
             echo "discovered_sql_server=$SQL_SERVER_NAME" >> $GITHUB_OUTPUT
             echo "discovered_key_vault=$KEY_VAULT_NAME" >> $GITHUB_OUTPUT
             echo "discovered_app_plan=$APP_SERVICE_PLAN_NAME" >> $GITHUB_OUTPUT
+            
+            # Track which resources actually exist for import
+            AI_EXISTS=$(az cognitiveservices account show --resource-group "$RESOURCE_GROUP" --name "$AI_FOUNDRY_NAME" >/dev/null 2>&1 && echo "true" || echo "false")
+            ACR_EXISTS=$(az acr show --resource-group "$RESOURCE_GROUP" --name "$ACR_NAME" >/dev/null 2>&1 && echo "true" || echo "false")
+            WEBAPP_EXISTS=$(az webapp show --resource-group "$RESOURCE_GROUP" --name "$WEB_APP_NAME" >/dev/null 2>&1 && echo "true" || echo "false")
+            SQL_EXISTS=$(az sql server show --resource-group "$RESOURCE_GROUP" --name "$SQL_SERVER_NAME" >/dev/null 2>&1 && echo "true" || echo "false")
+            KV_EXISTS=$(az keyvault show --resource-group "$RESOURCE_GROUP" --name "$KEY_VAULT_NAME" >/dev/null 2>&1 && echo "true" || echo "false")
+            ASP_EXISTS=$(az appservice plan show --resource-group "$RESOURCE_GROUP" --name "$APP_SERVICE_PLAN_NAME" >/dev/null 2>&1 && echo "true" || echo "false")
+            
+            echo "ai_exists=$AI_EXISTS" >> $GITHUB_OUTPUT
+            echo "acr_exists=$ACR_EXISTS" >> $GITHUB_OUTPUT
+            echo "webapp_exists=$WEBAPP_EXISTS" >> $GITHUB_OUTPUT
+            echo "sql_exists=$SQL_EXISTS" >> $GITHUB_OUTPUT
+            echo "kv_exists=$KV_EXISTS" >> $GITHUB_OUTPUT
+            echo "asp_exists=$ASP_EXISTS" >> $GITHUB_OUTPUT
             
             echo "📋 Discovered resources:"
             echo "  AI Foundry: $AI_FOUNDRY_NAME"
@@ -177,6 +245,8 @@ jobs:
           echo "📝 Updating terraform.tfvars with discovered resource names..."
           
           # Update terraform.tfvars with actual discovered resource names
+          echo "📝 Updating terraform.tfvars with discovered/fallback values..."
+          
           sed -i "s/resource_group_name.*=.*/resource_group_name   = \"${{ github.event.inputs.resource_group_name }}\"/" terraform.tfvars
           sed -i "s/school_name.*=.*/school_name = \"${{ github.event.inputs.school_name }}\"/" terraform.tfvars
           sed -i "s/ai_foundry_name.*=.*/ai_foundry_name      = \"${{ steps.check-resources.outputs.discovered_ai_foundry }}\"/" terraform.tfvars
@@ -185,6 +255,19 @@ jobs:
           sed -i "s/sql_server_name.*=.*/sql_server_name       = \"${{ steps.check-resources.outputs.discovered_sql_server }}\"/" terraform.tfvars
           sed -i "s/key_vault_name.*=.*/key_vault_name            = \"${{ steps.check-resources.outputs.discovered_key_vault }}\"/" terraform.tfvars
           sed -i "s/acr_login_server.*=.*/acr_login_server      = \"${{ steps.check-resources.outputs.discovered_acr }}.azurecr.io\"/" terraform.tfvars
+          
+          # Also update subdomain (derived from ai_foundry_name)
+          AI_SUBDOMAIN=$(echo "${{ steps.check-resources.outputs.discovered_ai_foundry }}" | sed 's/[^a-z0-9]//g' | cut -c1-24)
+          sed -i "s/ai_foundry_subdomain.*=.*/ai_foundry_subdomain = \"${AI_SUBDOMAIN}\"/" terraform.tfvars
+          
+          echo "✅ Updated terraform.tfvars:"
+          echo "  Resource Group: ${{ github.event.inputs.resource_group_name }}"
+          echo "  School Name: ${{ github.event.inputs.school_name }}"
+          echo "  AI Foundry: ${{ steps.check-resources.outputs.discovered_ai_foundry }}"
+          echo "  ACR: ${{ steps.check-resources.outputs.discovered_acr }}"
+          echo "  Web App: ${{ steps.check-resources.outputs.discovered_webapp }}"
+          echo "  SQL Server: ${{ steps.check-resources.outputs.discovered_sql_server }}"
+          echo "  Key Vault: ${{ steps.check-resources.outputs.discovered_key_vault }}"
           
           echo "✅ Updated terraform.tfvars with discovered values"
 
