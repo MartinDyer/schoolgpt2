@@ -114,17 +114,15 @@ jobs:
           echo "✅ Created backend.tf configuration"
           cat infra/backend.tf
 
-      - name: 🔑 Store Backend Configuration as Secrets
+      - name: ✅ Backend Configuration Complete
         run: |
-          # These will be used by subsequent workflows
-          echo "Backend storage created successfully!"
+          echo "✅ Backend storage created successfully!"
           echo "Storage Account: ${{ steps.create-backend.outputs.storage_account_name }}"
           echo "Container: ${{ steps.create-backend.outputs.container_name }}"
+          echo "Resource Group: ${{ steps.create-backend.outputs.resource_group_backend }}"
           echo ""
-          echo "ℹ️ Add these as GitHub Repository Secrets:"
-          echo "TERRAFORM_STORAGE_ACCOUNT: ${{ steps.create-backend.outputs.storage_account_name }}"
-          echo "TERRAFORM_CONTAINER: ${{ steps.create-backend.outputs.container_name }}"
-          echo "TERRAFORM_RESOURCE_GROUP_BACKEND: ${{ steps.create-backend.outputs.resource_group_backend }}"
+          echo "🔧 Backend configuration has been automatically saved to infra/backend.tf"
+          echo "📦 Other workflows will automatically read this configuration - no manual setup needed!"
 
       - name: 📤 Commit Backend Configuration
         run: |
@@ -140,14 +138,12 @@ jobs:
 
       - name: 🎉 Setup Complete
         run: |
-          echo "✅ Backend storage setup complete!"
+          echo "🎉 Backend storage setup complete!"
+          echo ""
+          echo "✅ Everything is automated - no manual steps needed!"
           echo ""
           echo "📋 Next Steps:"
-          echo "1. Add the following GitHub Repository Secrets:"
-          echo "   - TERRAFORM_STORAGE_ACCOUNT: ${{ steps.create-backend.outputs.storage_account_name }}"
-          echo "   - TERRAFORM_CONTAINER: ${{ steps.create-backend.outputs.container_name }}"
-          echo "   - TERRAFORM_RESOURCE_GROUP_BACKEND: ${{ steps.create-backend.outputs.resource_group_backend }}"
+          echo "1. Run the '🔄 Import Existing Resources' workflow (if you have existing resources)"
+          echo "2. Or run the '🚀 Deploy SchoolGPT Infrastructure' workflow for new deployment"
           echo ""
-          echo "2. Run the 'Deploy SchoolGPT' workflow to deploy your infrastructure"
-          echo ""
-          echo "🏫 Your SchoolGPT is ready to deploy!" 
+          echo "🏫 Your SchoolGPT backend is ready!" 

@@ -75,14 +75,41 @@ jobs:
           echo "✅ Backend configuration found"
           cat backend.tf
 
+      - name: 🔧 Read Backend Configuration
+        id: backend-config
+        run: |
+          echo "🔍 Reading backend configuration from backend.tf..."
+          cd infra
+          
+          if [ ! -f "backend.tf" ]; then
+            echo "❌ Backend configuration not found!"
+            echo "Please run the 'Setup SchoolGPT Backend Storage' workflow first."
+            exit 1
+          fi
+          
+          # Extract backend configuration from backend.tf
+          RESOURCE_GROUP_BACKEND=$(grep -o 'resource_group_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
+          STORAGE_ACCOUNT=$(grep -o 'storage_account_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
+          CONTAINER_NAME=$(grep -o 'container_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
+          
+          echo "✅ Backend configuration found:"
+          echo "  Resource Group: $RESOURCE_GROUP_BACKEND"
+          echo "  Storage Account: $STORAGE_ACCOUNT"
+          echo "  Container: $CONTAINER_NAME"
+          
+          # Set outputs for next steps
+          echo "resource_group_backend=$RESOURCE_GROUP_BACKEND" >> $GITHUB_OUTPUT
+          echo "storage_account=$STORAGE_ACCOUNT" >> $GITHUB_OUTPUT
+          echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
+
       - name: Terraform Init with Backend
         run: |
           cd infra
           echo "🔄 Initializing Terraform with remote backend..."
           terraform init \
-            -backend-config="resource_group_name=${{ secrets.TERRAFORM_RESOURCE_GROUP_BACKEND }}" \
-            -backend-config="storage_account_name=${{ secrets.TERRAFORM_STORAGE_ACCOUNT }}" \
-            -backend-config="container_name=${{ secrets.TERRAFORM_CONTAINER }}" \
+            -backend-config="resource_group_name=${{ steps.backend-config.outputs.resource_group_backend }}" \
+            -backend-config="storage_account_name=${{ steps.backend-config.outputs.storage_account }}" \
+            -backend-config="container_name=${{ steps.backend-config.outputs.container_name }}" \
             -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate"
 
       - name: 🔍 Check Existing Resources in Azure
