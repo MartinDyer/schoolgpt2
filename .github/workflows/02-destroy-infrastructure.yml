@@ -90,6 +90,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.7.5
+          terraform_wrapper: false
 
       - name: 🔧 Read Backend Configuration
         id: backend-config
@@ -118,6 +119,25 @@ jobs:
           echo "storage_account=$STORAGE_ACCOUNT" >> $GITHUB_OUTPUT
           echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
 
+      - name: 📋 Validate Configuration
+        run: |
+          cd infra
+          echo "📋 Validating terraform.tfvars configuration..."
+          
+          if [ ! -f "terraform.tfvars" ]; then
+            echo "❌ terraform.tfvars not found!"
+            echo "Please ensure terraform.tfvars is configured before destroying."
+            exit 1
+          fi
+          
+          # Check for placeholder values
+          if grep -q "REPLACE_AUTO_GENERATED\|REPLACE_WITH_" terraform.tfvars; then
+            echo "⚠️ Warning: terraform.tfvars contains placeholder values"
+            echo "This might indicate incomplete configuration"
+          fi
+          
+          echo "✅ Configuration validation completed"
+
       - name: Terraform Init
         run: |
           cd infra
@@ -142,7 +162,8 @@ jobs:
             -var-file=terraform.tfvars \
             -var="environment=${{ github.event.inputs.environment }}" \
             -var="school_name=${{ github.event.inputs.school_name }}" \
-            -out=destroy.tfplan
+            -out=destroy.tfplan \
+            -no-color
 
       - name: ⏸️ Final Confirmation
         run: |
@@ -168,11 +189,16 @@ jobs:
           echo "🗑️ Destroying Terraform backend storage..."
           echo "⚠️  This will remove ALL state files for ALL environments!"
           
-          # Delete the backend resource group (this contains the storage account)
-          BACKEND_RG="${{ secrets.TERRAFORM_RESOURCE_GROUP_BACKEND }}"
+          # Use the backend configuration we read earlier
+          BACKEND_RG="${{ steps.backend-config.outputs.resource_group_backend }}"
+          STORAGE_ACCOUNT="${{ steps.backend-config.outputs.storage_account }}"
+          
+          echo "Backend Resource Group: $BACKEND_RG"
+          echo "Storage Account: $STORAGE_ACCOUNT"
           
           if az group exists --name "$BACKEND_RG"; then
-            echo "Deleting resource group: $BACKEND_RG"
+            echo "🗑️ Deleting backend resource group: $BACKEND_RG"
+            echo "This contains storage account: $STORAGE_ACCOUNT"
             az group delete --name "$BACKEND_RG" --yes --no-wait
             echo "✅ Backend storage deletion initiated"
           else
@@ -223,12 +249,12 @@ jobs:
             
             All SchoolGPT infrastructure resources have been permanently removed from Azure.
             
-            ${${{ github.event.inputs.destroy_backend }} ? '⚠️ **Backend storage was also destroyed** - you will need to run the setup workflow again before deploying.' : 'ℹ️ Backend storage was preserved for future deployments.'}
+            ${{ github.event.inputs.destroy_backend == 'true' && '⚠️ **Backend storage was also destroyed** - you will need to run the setup workflow again before deploying.' || 'ℹ️ Backend storage was preserved for future deployments.' }}
             
             ### Next Steps
             - All Azure resources have been cleaned up
             - No ongoing costs will be incurred
-            ${${{ github.event.inputs.destroy_backend }} ? '- Run "Setup SchoolGPT Backend Storage" workflow to deploy again' : '- Infrastructure can be redeployed using existing backend'}
+            ${{ github.event.inputs.destroy_backend == 'true' && '- Run "Setup SchoolGPT Backend Storage" workflow to deploy again' || '- Infrastructure can be redeployed using existing backend' }}
             `;
             
             // You could create an issue or comment here if needed
