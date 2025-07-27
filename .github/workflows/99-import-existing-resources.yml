@@ -240,6 +240,8 @@ jobs:
           echo "✅ Import process completed!"
 
       - name: 🧪 Validate State After Import
+        continue-on-error: true
+        id: validate
         run: |
           cd infra
           echo "🧪 Validating Terraform state after import..."
@@ -255,11 +257,26 @@ jobs:
           PLAN_EXIT_CODE=$?
           if [ $PLAN_EXIT_CODE -eq 0 ]; then
             echo "✅ Perfect! No changes needed - all resources are properly imported"
+            echo "validation_result=success" >> $GITHUB_OUTPUT
           elif [ $PLAN_EXIT_CODE -eq 2 ]; then
             echo "⚠️ Some differences detected - this is normal after import"
             echo "Run the Deploy Infrastructure workflow to sync any configuration differences"
+            echo "validation_result=changes_detected" >> $GITHUB_OUTPUT
           else
             echo "❌ Terraform plan failed"
+            echo "validation_result=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 📊 Validation Results
+        run: |
+          if [ "${{ steps.validate.outputs.validation_result }}" = "success" ]; then
+            echo "✅ Validation successful - no changes needed"
+          elif [ "${{ steps.validate.outputs.validation_result }}" = "changes_detected" ]; then
+            echo "⚠️ Validation completed with differences detected"
+            echo "This is normal after import - configuration differences may exist"
+          else
+            echo "❌ Validation failed - check logs above"
             exit 1
           fi
 
