@@ -50,6 +50,35 @@ app_insights_name = "schoolgpt-ai"
 key_vault_name            = "testschoolkv2024"
 key_vault_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb"  # REPLACE_WITH_YOUR_OBJECT_ID
 
+# Content Filter Configuration (School Safety for Kids 16 and Below)
+content_filter_hate_severity     = "High"      # Maximum protection for kids
+content_filter_sexual_severity   = "High"      # Maximum protection for kids  
+content_filter_violence_severity = "High"      # Maximum protection for kids
+content_filter_self_harm_severity = "High"     # Maximum protection for kids
+enable_custom_content_filters    = true        # Enable school-specific vocabulary filtering
+custom_filter_patterns = [                     # Comprehensive safety patterns for kids 16 and below
+  "bully*",      # Bullying prevention
+  "cheat*",      # Academic dishonesty
+  "skip* class", # Truancy prevention
+  "truant*",     # Truancy prevention
+  "vandal*",     # Property damage
+  "fight*",      # Physical violence
+  "weapon*",     # Weapons
+  "drug*",       # Substance abuse
+  "alcohol*",    # Alcohol references
+  "smoke*",      # Smoking references
+  "skip* school", # School attendance
+  "gang*",       # Gang-related content
+  "steal*",      # Theft prevention
+  "lie*",        # Honesty promotion
+  "skip* homework", # Academic responsibility
+  "copy* homework", # Academic integrity
+  "plagiar*",    # Academic integrity
+  "skip* test",  # Academic responsibility
+  "cheat* test", # Academic integrity
+  "skip* exam"   # Academic responsibility
+]
+
 # Terraform Backend Storage
 # backend_storage_account_name = "schoolgptstg"
 # backend_container_name       = "tfstate"

@@ -113,6 +113,9 @@ jobs:
           WEB_APP_NAME=$(terraform output -raw web_app_name 2>/dev/null || echo "")
           RESOURCE_GROUP=$(terraform output -raw resource_group_name 2>/dev/null || echo "")
           KEY_VAULT_NAME=$(terraform output -raw key_vault_name 2>/dev/null || echo "")
+          TABLE_STORAGE_CONNECTION_STRING=$(terraform output -raw table_storage_connection_string 2>/dev/null || echo "")
+          AI_FOUNDRY_ENDPOINT=$(terraform output -raw ai_foundry_endpoint 2>/dev/null || echo "")
+          AI_FOUNDRY_API_KEY=$(terraform output -raw ai_foundry_api_key 2>/dev/null || echo "")
           
           if [ -z "$ACR_NAME" ] || [ -z "$WEB_APP_NAME" ] || [ -z "$RESOURCE_GROUP" ]; then
             echo "❌ Could not get infrastructure information from Terraform state"
@@ -125,12 +128,17 @@ jobs:
           echo "  Web App: $WEB_APP_NAME"
           echo "  Resource Group: $RESOURCE_GROUP"
           echo "  Key Vault: $KEY_VAULT_NAME"
+          echo "  Table Storage: Configured"
+          echo "  AI Foundry: Configured"
           
           # Set outputs for next steps
           echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
           echo "web_app_name=$WEB_APP_NAME" >> $GITHUB_OUTPUT
           echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
           echo "key_vault_name=$KEY_VAULT_NAME" >> $GITHUB_OUTPUT
+          echo "table_storage_connection_string=$TABLE_STORAGE_CONNECTION_STRING" >> $GITHUB_OUTPUT
+          echo "ai_foundry_endpoint=$AI_FOUNDRY_ENDPOINT" >> $GITHUB_OUTPUT
+          echo "ai_foundry_api_key=$AI_FOUNDRY_API_KEY" >> $GITHUB_OUTPUT
 
       - name: 🔑 Get ACR Credentials from Key Vault
         id: get-credentials
@@ -210,6 +218,37 @@ jobs:
             --name ${{ steps.get-infra.outputs.web_app_name }} \
             --resource-group ${{ steps.get-infra.outputs.resource_group }} \
             --settings DOCKER_CUSTOM_IMAGE_NAME="${{ steps.get-infra.outputs.acr_name }}.azurecr.io/schoolgpt-app:${{ steps.check-rebuild.outputs.image_tag }}"
+
+      - name: 🔧 Configure Table Storage and AI Foundry Settings
+        run: |
+          echo "🔧 Configuring Table Storage and AI Foundry settings..."
+          
+          # Configure Table Storage settings
+          az webapp config appsettings set \
+            --name ${{ steps.get-infra.outputs.web_app_name }} \
+            --resource-group ${{ steps.get-infra.outputs.resource_group }} \
+            --settings \
+            TABLE_STORAGE_CONNECTION_STRING="${{ steps.get-infra.outputs.table_storage_connection_string }}" \
+            TABLE_STORAGE_CONVERSATIONS_TABLE="conversations" \
+            TABLE_STORAGE_MESSAGES_TABLE="messages" \
+            TABLE_STORAGE_ENABLE_FEEDBACK="false" \
+            AI_FOUNDRY_ENDPOINT="${{ steps.get-infra.outputs.ai_foundry_endpoint }}" \
+            AI_FOUNDRY_KEY="${{ steps.get-infra.outputs.ai_foundry_api_key }}" \
+            AI_FOUNDRY_MODEL="gpt-35-turbo" \
+            AI_FOUNDRY_TEMPERATURE="0.1" \
+            AI_FOUNDRY_MAX_TOKENS="800" \
+            AUTH_ENABLED="true" \
+            ENTRA_ID_ENABLED="true" \
+            CHAT_HISTORY_ENABLED="true" \
+            ENVIRONMENT="SCHOOL_SAFE" \
+            TARGET_AUDIENCE="STUDENTS_UNDER_16" \
+            CONTENT_MODERATION="HIGH" \
+            UI_TITLE="SchoolGPT AI Assistant" \
+            UI_CHAT_TITLE="School AI Assistant" \
+            UI_CHAT_DESCRIPTION="Ask me questions about your studies! I'm here to help with educational content." \
+            UI_SHOW_SHARE_BUTTON="false"
+          
+          echo "✅ Table Storage and AI Foundry settings configured successfully!"
 
       - name: 🔄 Restart Web App
         run: |

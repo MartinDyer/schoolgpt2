@@ -1,395 +1,263 @@
-# 🏗️ SchoolGPT Infrastructure
+# SchoolGPT Infrastructure - Simplified Azure AI Foundry Deployment
 
-**Enterprise-grade Terraform infrastructure for educational AI deployment**
+A **simplified, cost-effective** infrastructure template for deploying a school-safe AI chat application using Azure AI Foundry and Microsoft's native stack.
 
----
+## 🎯 **Key Features**
 
-## 📋 Overview
+- ✅ **Azure AI Foundry** - Complete AI service with content filtering
+- ✅ **Azure Table Storage** - Cost-effective chat history storage
+- ✅ **Entra ID Authentication** - Secure user management
+- ✅ **Container Deployment** - Docker-based application hosting
+- ✅ **Application Insights** - Monitoring and analytics
+- ✅ **Key Vault** - Secure secrets management
 
-This directory contains the complete Terraform infrastructure code for deploying SchoolGPT, a production-ready AI assistant specifically designed for educational institutions. The infrastructure is fully automated and managed through GitHub Actions workflows.
-
-### 🏆 Infrastructure Features
-
-- 🧠 **Azure AI Foundry** - Latest GPT models with educational optimization
-- 🔒 **Enterprise Security** - Key Vault, encryption, and access controls  
-- 📊 **Compliance Monitoring** - SQL Database with audit logging
-- 🚨 **Real-time Alerts** - Application Insights with custom monitoring
-- 🐳 **Container Platform** - Azure Container Registry and App Service
-- 🔄 **Automated State Management** - Remote Terraform state in Azure Storage
-- 🏫 **Multi-school Ready** - Isolated deployments per institution
-
----
-
-## 📁 File Structure
+## 🏗️ **Architecture Overview**
 
 ```
-infra/
-├── main.tf                          # Core infrastructure resources
-├── variables.tf                     # Input variable definitions
-├── terraform.tfvars                 # Environment-specific values
-├── terraform.tfvars.school-template # Template for new schools
-├── backend.tf                       # Remote state configuration (auto-generated)
-├── .terraform.lock.hcl             # Provider version lock file
-├── school_safe_database_schema.sql  # Database initialization script
-└── README.md                       # This file
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Students      │    │   Teachers      │    │   Administrators │
+│   (Entra ID)    │    │   (Entra ID)    │    │   (Entra ID)    │
+└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
+          │                      │                      │
+          └──────────────────────┼──────────────────────┘
+                                 │
+                    ┌─────────────▼─────────────┐
+                    │    🌐 School AI App       │
+                    │   (Container Web App)     │
+                    └─────────────┬─────────────┘
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │    🔐 Key Vault           │
+                    │   (Secrets Management)    │
+                    └─────────────┬─────────────┘
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │    🧠 AI Foundry          │
+                    │   (Content Filtering)     │
+                    └─────────────┬─────────────┘
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │    📋 Table Storage       │
+                    │   (Chat History)          │
+                    └─────────────┬─────────────┘
+                                  │
+                    ┌─────────────▼─────────────┐
+                    │    📈 App Insights        │
+                    │   (Monitoring)            │
+                    └───────────────────────────┘
 ```
 
----
+## 📊 **Resource Breakdown**
 
-## 🚀 Deployment Methods
-
-### Automated Deployment (Recommended)
-
-**For Schools - Zero Technical Knowledge Required:**
-
-1. **Fork Repository** → Get your own copy
-2. **Add GitHub Secret** → Azure credentials only
-3. **Run Setup Workflow** → Provide school name
-4. **Deploy Infrastructure** → Fully automated
-5. **Deploy Application** → Ready to use
-
-All infrastructure is created, configured, and managed automatically.
-
-### Manual Deployment (Advanced Users)
-
-**For Developers and Technical Teams:**
-
-```bash
-# Prerequisites
-az login
-terraform --version  # Requires Terraform >= 1.0
-
-# Setup
-git clone <repository>
-cd schoolgpt/infra
-
-# Configure
-cp terraform.tfvars.template terraform.tfvars
-# Edit terraform.tfvars with your values
-
-# Deploy
-terraform init
-terraform plan
-terraform apply
-
-# Application deployment requires additional steps
-```
-
----
-
-## 🏗️ Architecture Components
-
-### Core Infrastructure
-
-| Component | Purpose | Configuration |
-|-----------|---------|---------------|
-| **Resource Group** | Logical container for all resources | Auto-named per school |
-| **Azure AI Foundry** | GPT model hosting with content filtering | School-safe prompts |
+| **Component** | **Purpose** | **Features** |
+|---------------|-------------|--------------|
+| **AI Foundry** | AI service with content filtering | School-safe responses, content moderation |
 | **App Service** | Web application hosting | Auto-scaling enabled |
 | **Container Registry** | Docker image storage | Private repository |
-| **SQL Database** | Chat history and audit logging | Encrypted at rest |
+| **Table Storage** | Chat history storage | Cost-effective, simple management |
 | **Key Vault** | Secure secrets management | Access policies configured |
 | **Application Insights** | Monitoring and analytics | Custom dashboards |
 | **Storage Account** | Terraform state management | Geo-redundant |
 
-### Security Architecture
+## 💰 **Cost Optimization**
 
-```mermaid
-graph TB
-    Users[👥 Students/Teachers] --> AAD[🔐 Azure AD]
-    AAD --> WebApp[🌐 School AI App]
-    WebApp --> KeyVault[🔐 Key Vault]
-    WebApp --> AIFoundry[🧠 AI Foundry]
-    AIFoundry --> ContentFilter[🛡️ Content Filter]
-    WebApp --> SQL[(📊 SQL Database)]
-    SQL --> AuditLogs[📋 Audit Trail]
-    Monitor[📈 App Insights] --> Alerts[🚨 Admin Alerts]
-```
+### **Why This Architecture is Cost-Effective:**
+
+1. **No SQL Server** - Eliminates ~$20-80/month database costs
+2. **Table Storage** - 80% cheaper than Cosmos DB for chat history
+3. **Entra ID** - Free user management (no local database needed)
+4. **Auto-scaling** - Pay only for what you use
+
+### **Estimated Monthly Costs**
+
+| School Size | App Service | AI Foundry | Table Storage | Monitoring | **Total** |
+|-------------|-------------|------------|---------------|------------|-----------|
+| Small (100-500) | $55 | $50-100 | $5 | $10 | **$120-170** |
+| Medium (500-2000) | $110 | $150-300 | $10 | $20 | **$290-440** |
+| Large (2000+) | $200 | $300-500 | $20 | $30 | **$550-750** |
+
+### **Table Storage Benefits**
+
+**Cost-Effective Chat History:**
+- ✅ **80% cost savings** vs Cosmos DB
+- ✅ **Automatic scaling** with usage
+- ✅ **Built-in encryption** and security
+- ✅ **Microsoft native** integration
+- ✅ **Simple management** via Azure Portal
 
 ---
 
-## ⚙️ Configuration
+## 🚀 **Quick Start**
 
-### School-Specific Variables
+### **Prerequisites**
+- Azure subscription
+- Azure CLI installed
+- Terraform installed
 
-**Automatically Generated (via workflows):**
-```hcl
-# Infrastructure naming (auto-generated)
-resource_group_name   = "lincolnelementary-production-rg"
-ai_foundry_name      = "lincolnelementaryaifoundryabc123"
-web_app_name         = "lincolnelementarywebappabc123"
-sql_server_name      = "lincolnelementarysqlsrvabc123"
-key_vault_name       = "lincolnelementarykvaabc123"
+### **1. Clone and Configure**
+```bash
+# Clone the repository
+git clone <your-repo>
+cd schoolgpt/infra
+
+# Copy and configure variables
+cp terraform.tfvars.template terraform.tfvars
+# Edit terraform.tfvars with your values
 ```
 
-**School-Provided Values:**
+### **2. Deploy Infrastructure**
+```bash
+# Initialize Terraform
+terraform init
+
+# Plan deployment
+terraform plan
+
+# Deploy infrastructure
+terraform apply
+```
+
+### **3. Configure Authentication**
+1. Go to Azure Portal → App Service
+2. Configure Entra ID authentication
+3. Set up user access policies
+
+### **4. Deploy Application**
+1. Push code to trigger GitHub Actions
+2. Monitor deployment in Azure Portal
+3. Test the application
+
+---
+
+## 🔧 **Configuration**
+
+### **Required Variables**
+
+Update `terraform.tfvars` with your values:
+
 ```hcl
-# Azure account information
+# Azure Subscription
 azure_subscription_id = "your-subscription-id"
 azure_tenant_id       = "your-tenant-id"
 
-# School information
-school_name = "Lincoln Elementary School"
-alert_email = "it@lincoln.edu"
+# School Configuration
+school_name           = "Your School Name"
+alert_email           = "admin@yourschool.edu"
 
-# Administrative access
-sql_azuread_admin_login = "admin@lincoln.edu"
-sql_azuread_admin_object_id = "user-object-id"
-key_vault_admin_object_id = "user-object-id"
+# Globally Unique Names
+ai_foundry_name       = "yourschool-ai-foundry"
+ai_foundry_subdomain  = "yourschool-ai-foundry"
+acr_name              = "yourschoolacr"
+web_app_name          = "yourschool-ai-app"
+key_vault_name        = "yourschool-kv"
+
+# Admin Access
+key_vault_admin_object_id = "your-object-id"
 ```
 
-### Performance Tiers
+### **Environment Variables**
 
-**Small School (100-500 students):**
-```hcl
-app_service_sku = "B2"
-sql_sku_name    = "S1"
-model_capacity  = 120  # Tokens per minute
-```
+The application automatically configures:
 
-**Medium School (500-2000 students):**
-```hcl
-app_service_sku = "S2"
-sql_sku_name    = "S2"
-model_capacity  = 240
-```
-
-**Large School (2000+ students):**
-```hcl
-app_service_sku = "P1v2"
-sql_sku_name    = "S3"
-model_capacity  = 480
-```
-
----
-
-## 🔒 Security Configuration
-
-### Content Filtering (High Level)
-```hcl
-# Automatically configured for educational safety
-AZURE_OPENAI_CONTENT_FILTER_HATE     = "2"  # High filtering
-AZURE_OPENAI_CONTENT_FILTER_SEXUAL   = "2"  # High filtering  
-AZURE_OPENAI_CONTENT_FILTER_VIOLENCE = "2"  # High filtering
-AZURE_OPENAI_CONTENT_FILTER_SELF_HARM = "2" # High filtering
-```
-
-### Access Controls
-- **Azure AD Integration** - School domain authentication only
-- **Role-Based Access** - Students, teachers, and admins
-- **Network Security** - HTTPS enforcement, secure headers
-- **Data Encryption** - At rest and in transit
-
-### Audit & Compliance
-- **Complete Conversation Logging** - All AI interactions recorded
-- **Retention Policies** - Configurable data retention (default: 90 days)
-- **Export Capabilities** - Compliance reporting and data export
-- **Monitoring Alerts** - Real-time policy violation detection
-
----
-
-## 📊 Monitoring & Alerts
-
-### Application Insights Dashboards
-
-**Usage Analytics:**
-- Student interaction patterns
-- Popular question categories
-- Response quality metrics
-- Peak usage times
-
-**Security Monitoring:**
-- Content filter activations
-- Authentication failures
-- Unusual access patterns
-- Policy violations
-
-**Performance Metrics:**
-- Response times
-- System availability
-- Resource utilization
-- Error rates
-
-### Automated Alerts
-
-```hcl
-# Content filter violations → Email to IT admin
-# High usage periods → Cost optimization alerts
-# System errors → Incident creation
-# Security events → Immediate notification
-```
-
----
-
-## 💰 Cost Management
-
-### Resource Optimization
-
-**Automatic Scaling:**
-- App Service scales with demand
-- Database resources adjust to usage
-- AI Foundry costs based on actual tokens
-
-**Cost Monitoring:**
-- Daily cost alerts for budget overruns
-- Usage analytics for optimization
-- Monthly cost reports per school
-
-### Estimated Monthly Costs
-
-| School Size | App Service | AI Foundry | SQL Database | Storage/Monitoring | **Total** |
-|-------------|-------------|------------|--------------|-------------------|-----------|
-| Small (100-500) | $55 | $50-100 | $20 | $10 | **$135-185** |
-| Medium (500-2000) | $110 | $150-300 | $40 | $20 | **$320-470** |
-| Large (2000+) | $200 | $300-500 | $80 | $30 | **$610-810** |
-
----
-
-## 🔄 State Management
-
-### Remote Backend Configuration
-
-**Automatically Configured:**
-```hcl
-terraform {
-  backend "azurerm" {
-    resource_group_name  = "schoolname-production-rg"
-    storage_account_name = "schoolnametfstatexxxxx"
-    container_name       = "tfstate"
-    key                  = "production.terraform.tfstate"
-  }
-}
-```
-
-**Benefits:**
-- ✅ **Team Collaboration** - Shared state across team members
-- ✅ **State Locking** - Prevents concurrent modifications
-- ✅ **Version History** - State backup and recovery
-- ✅ **CI/CD Integration** - GitHub Actions automation
-
----
-
-## 🛠️ Advanced Configuration
-
-### Custom Domain Setup
-
-```hcl
-# Add custom domain for school branding
-custom_domain = "ai.lincoln.edu"
-ssl_certificate = "managed"  # Let's Encrypt automatic
-```
-
-### Integration Options
-
-**Learning Management Systems:**
-- Canvas integration
-- Google Classroom compatibility
-- Microsoft Teams education
-
-**Authentication Providers:**
-- Azure AD (default)
-- Google Workspace
-- SAML 2.0 providers
-
-### Scaling for Multiple Schools
-
-**Multi-tenant Architecture:**
-```hcl
-# Each school gets isolated resources
-schools = {
-  "lincoln-elementary" = {
-    region = "eastus"
-    tier   = "small"
-  }
-  "washington-high" = {
-    region = "westus2"
-    tier   = "large"
-  }
-}
-```
-
----
-
-## 📚 Advanced Topics
-
-### Database Schema
-- **Chat History Table** - Conversation storage
-- **User Analytics** - Usage patterns and preferences  
-- **Audit Logs** - Compliance and security tracking
-- **Configuration** - School-specific settings
-
-### Container Deployment
-- **Blue-Green Deployments** - Zero-downtime updates
-- **Health Checks** - Automatic failure detection
-- **Log Aggregation** - Centralized logging
-- **Secret Injection** - Secure configuration
-
-### Backup & Recovery
-- **Automated Backups** - Daily database snapshots
-- **Point-in-Time Recovery** - Restore to any moment
-- **Geo-Redundancy** - Multi-region data protection
-- **Disaster Recovery** - RTO < 4 hours, RPO < 1 hour
-
----
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-**Resource Name Conflicts:**
 ```bash
-# Solution: Names are auto-generated with random suffixes
-# No manual intervention needed in automated workflows
-```
+# AI Foundry
+AZURE_OPENAI_ENDPOINT=https://your-ai-foundry.openai.azure.com/
+AZURE_OPENAI_KEY=your-api-key
+AZURE_OPENAI_MODEL=gpt-35-turbo
 
-**Permission Errors:**
-```bash
-# Ensure service principal has Contributor role
-az role assignment create \
-  --assignee <service-principal-id> \
-  --role Contributor \
-  --scope /subscriptions/<subscription-id>
-```
+# Table Storage
+TABLE_STORAGE_CONNECTION_STRING=your-connection-string
+TABLE_STORAGE_CONVERSATIONS_TABLE=conversations
+TABLE_STORAGE_MESSAGES_TABLE=messages
 
-**State Management Issues:**
-```bash
-# Backend storage is automatically created
-# Import existing resources using provided workflow
+# Authentication
+AUTH_ENABLED=true
+ENTRA_ID_ENABLED=true
 ```
-
-### Support Resources
-- **Infrastructure Logs** - Application Insights diagnostics
-- **Terraform State** - Remote backend troubleshooting
-- **Azure Portal** - Resource health monitoring
-- **GitHub Actions** - Workflow execution logs
 
 ---
 
-## 🎯 Production Readiness
+## 🔒 **Security Features**
 
-### Security Checklist
-- ✅ **Encryption at rest and in transit**
-- ✅ **Network security groups configured**
-- ✅ **Key Vault access policies set**
-- ✅ **Azure AD authentication enabled**
-- ✅ **Content filtering at HIGH level**
-- ✅ **Audit logging active**
+### **Content Filtering**
+- **High-level filtering** for school safety
+- **Automatic content moderation**
+- **Age-appropriate responses**
+- **Violation logging and alerts**
 
-### Compliance Features
-- ✅ **GDPR Compliance** - Data privacy and export
-- ✅ **COPPA Compliance** - Child safety protections
-- ✅ **FERPA Compliance** - Educational data protection
-- ✅ **SOC 2 Type II** - Azure infrastructure certification
+### **Authentication**
+- **Entra ID integration**
+- **Role-based access control**
+- **Secure token management**
+- **No local user database**
 
-### Operational Excellence
-- ✅ **Automated deployments**
-- ✅ **Infrastructure as Code**
-- ✅ **Monitoring and alerting**
-- ✅ **Disaster recovery planning**
-- ✅ **Performance optimization**
+### **Data Protection**
+- **Encryption at rest**
+- **Encryption in transit**
+- **Key Vault for secrets**
+- **Audit logging**
 
 ---
 
-**🏗️ Professional infrastructure. Educational focus. Production ready.**
+## 📈 **Monitoring & Alerts**
 
-**[Deploy Now](../GETTING_STARTED.md) | [View Workflows](../.github/workflows/) | [School Setup Guide](../SCHOOL_SETUP_GUIDE.md)** 
+### **Application Insights**
+- **Real-time monitoring**
+- **Performance metrics**
+- **Error tracking**
+- **Usage analytics**
+
+### **Alert Configuration**
+- **Content filter violations**
+- **System health issues**
+- **Performance degradation**
+- **Security events**
+
+---
+
+## 🛠️ **Troubleshooting**
+
+### **Common Issues**
+
+1. **Authentication Errors**
+   - Verify Entra ID configuration
+   - Check user permissions
+   - Validate token settings
+
+2. **Content Filter Issues**
+   - Review filter policies
+   - Check AI Foundry settings
+   - Monitor violation logs
+
+3. **Storage Connection Issues**
+   - Verify Table Storage connection
+   - Check Key Vault access
+   - Validate managed identity
+
+### **Support Resources**
+- Azure Portal monitoring
+- Application Insights logs
+- Terraform state inspection
+- GitHub Actions logs
+
+---
+
+## 📚 **Next Steps**
+
+1. **Configure Entra ID authentication**
+2. **Deploy your application code**
+3. **Set up monitoring dashboards**
+4. **Train staff on usage**
+5. **Monitor and optimize costs**
+
+---
+
+## 🤝 **Contributing**
+
+This template is designed for educational institutions. Contributions welcome!
+
+---
+
+## 📄 **License**
+
+MIT License - See LICENSE file for details. 

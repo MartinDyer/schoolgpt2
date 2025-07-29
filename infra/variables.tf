@@ -170,64 +170,6 @@ variable "docker_tag" {
   default     = "latest"
 }
 
-# SQL Database Configuration
-variable "sql_server_name" {
-  description = "Azure SQL Server name (must be globally unique, 1-63 lowercase letters/numbers). (Required)"
-  type        = string
-  
-  validation {
-    condition = can(regex("^[a-z0-9-]{1,63}$", var.sql_server_name))
-    error_message = "SQL Server name must be 1-63 characters, lowercase letters, numbers, and hyphens only."
-  }
-}
-
-variable "sql_admin" {
-  description = "SQL admin username. (Default: sqladminuser)"
-  type        = string
-  default     = "sqladminuser"
-}
-
-variable "sql_password" {
-  description = "SQL admin password (must meet Azure SQL complexity requirements). (Required, sensitive)"
-  type        = string
-  sensitive   = true
-  
-  validation {
-    condition = length(var.sql_password) >= 8 && length(var.sql_password) <= 128
-    error_message = "SQL password must be between 8 and 128 characters."
-  }
-}
-
-variable "sql_db_name" {
-  description = "Azure SQL Database name. (Default: schoolgptdb)"
-  type        = string
-  default     = "schoolgptdb"
-}
-
-variable "sql_sku_name" {
-  description = "Azure SQL Database SKU (Basic, S0, S1, S2, S3, P1, P2, P4, P6). (Default: S1)"
-  type        = string
-  default     = "S1"
-  
-  validation {
-    condition = contains([
-      "Basic", "S0", "S1", "S2", "S3", 
-      "P1", "P2", "P4", "P6"
-    ], var.sql_sku_name)
-    error_message = "SQL SKU must be one of: Basic, S0, S1, S2, S3, P1, P2, P4, P6"
-  }
-}
-
-variable "sql_azuread_admin_login" {
-  description = "Azure AD admin login for SQL Server (typically the admin email). (Required)"
-  type        = string
-}
-
-variable "sql_azuread_admin_object_id" {
-  description = "Azure AD admin object ID for SQL Server. (Required)"
-  type        = string
-}
-
 # Application Insights Configuration
 variable "app_insights_name" {
   description = "Name for Application Insights resource. (Default: schoolgpt-ai)"
@@ -251,20 +193,86 @@ variable "key_vault_admin_object_id" {
   type        = string
 }
 
-# Terraform Backend Configuration
-# variable "backend_storage_account_name" {
-#   description = "Storage account name for Terraform state (must be globally unique, 3-24 lowercase letters/numbers). (Default: schoolgptstg)"
-#   type        = string
-#   default     = "schoolgptstg"
-#   
-#   validation {
-#     condition = can(regex("^[a-z0-9]{3,24}$", var.backend_storage_account_name))
-#     error_message = "Storage account name must be 3-24 characters, lowercase letters and numbers only."
-#   }
-# }
-# 
-# variable "backend_container_name" {
-#   description = "Blob container name for Terraform state (Default: tfstate)"
-#   type        = string
-#   default     = "tfstate"
-# } 
+# Table Storage Configuration
+variable "table_storage_account_name" {
+  description = "Name for the Azure Storage Account for chat history (must be globally unique, 3-24 lowercase letters/numbers). (Auto-generated)"
+  type        = string
+  default     = null
+}
+
+variable "table_storage_conversations_table" {
+  description = "Name for the conversations table in Table Storage. (Default: conversations)"
+  type        = string
+  default     = "conversations"
+}
+
+variable "table_storage_messages_table" {
+  description = "Name for the messages table in Table Storage. (Default: messages)"
+  type        = string
+  default     = "messages"
+}
+
+# Enhanced Content Filter Configuration
+variable "content_filter_hate_severity" {
+  description = "Severity level for hate speech content filter (Low, Medium, High). (Default: High)"
+  type        = string
+  default     = "High"
+  
+  validation {
+    condition = contains(["Low", "Medium", "High"], var.content_filter_hate_severity)
+    error_message = "Hate speech filter severity must be one of: Low, Medium, High"
+  }
+}
+
+variable "content_filter_sexual_severity" {
+  description = "Severity level for sexual content filter (Low, Medium, High). (Default: High)"
+  type        = string
+  default     = "High"
+  
+  validation {
+    condition = contains(["Low", "Medium", "High"], var.content_filter_sexual_severity)
+    error_message = "Sexual content filter severity must be one of: Low, Medium, High"
+  }
+}
+
+variable "content_filter_violence_severity" {
+  description = "Severity level for violence content filter (Low, Medium, High). (Default: High)"
+  type        = string
+  default     = "High"
+  
+  validation {
+    condition = contains(["Low", "Medium", "High"], var.content_filter_violence_severity)
+    error_message = "Violence content filter severity must be one of: Low, Medium, High"
+  }
+}
+
+variable "content_filter_self_harm_severity" {
+  description = "Severity level for self-harm content filter (Low, Medium, High). (Default: High)"
+  type        = string
+  default     = "High"
+  
+  validation {
+    condition = contains(["Low", "Medium", "High"], var.content_filter_self_harm_severity)
+    error_message = "Self-harm content filter severity must be one of: Low, Medium, High"
+  }
+}
+
+variable "enable_custom_content_filters" {
+  description = "Enable custom content filter rules for school-specific vocabulary. (Default: true)"
+  type        = bool
+  default     = true
+}
+
+variable "custom_filter_patterns" {
+  description = "List of custom patterns for school-specific content filtering. (Default: school safety patterns)"
+  type        = list(string)
+  default     = [
+    "bully*",
+    "cheat*", 
+    "skip* class",
+    "truant*",
+    "vandal*",
+    "fight*",
+    "weapon*"
+  ]
+} 
