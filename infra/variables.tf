@@ -58,13 +58,13 @@ variable "azure_openai_model" {
   description = "Azure OpenAI model name for AI Foundry (e.g., gpt-35-turbo, gpt-4, gpt-4o). (Default: gpt-35-turbo)"
   type        = string
   default     = "gpt-35-turbo"
-  
+
   validation {
     condition = contains([
-      "gpt-35-turbo", 
-      "gpt-35-turbo-16k", 
-      "gpt-4", 
-      "gpt-4-32k", 
+      "gpt-35-turbo",
+      "gpt-35-turbo-16k",
+      "gpt-4",
+      "gpt-4-32k",
       "gpt-4o",
       "gpt-4-turbo"
     ], var.azure_openai_model)
@@ -94,9 +94,9 @@ variable "model_capacity" {
   description = "Capacity for the model deployment (tokens per minute). (Default: 120)"
   type        = number
   default     = 120
-  
+
   validation {
-    condition = var.model_capacity >= 1 && var.model_capacity <= 1000
+    condition     = var.model_capacity >= 1 && var.model_capacity <= 1000
     error_message = "Model capacity must be between 1 and 1000."
   }
 }
@@ -112,9 +112,9 @@ variable "school_safe_system_message" {
 variable "acr_name" {
   description = "Azure Container Registry name (must be globally unique, 5-50 lowercase letters/numbers). (Required)"
   type        = string
-  
+
   validation {
-    condition = can(regex("^[a-z0-9]{5,50}$", var.acr_name))
+    condition     = can(regex("^[a-z0-9]{5,50}$", var.acr_name))
     error_message = "ACR name must be 5-50 characters, lowercase letters and numbers only."
   }
 }
@@ -136,11 +136,11 @@ variable "app_service_sku" {
   description = "SKU for the App Service Plan (B1, B2, B3, S1, S2, S3, P1v2, P2v2, P3v2). (Default: B2)"
   type        = string
   default     = "B2"
-  
+
   validation {
     condition = contains([
-      "B1", "B2", "B3", 
-      "S1", "S2", "S3", 
+      "B1", "B2", "B3",
+      "S1", "S2", "S3",
       "P1v2", "P2v2", "P3v2"
     ], var.app_service_sku)
     error_message = "App Service SKU must be one of: B1, B2, B3, S1, S2, S3, P1v2, P2v2, P3v2"
@@ -150,9 +150,9 @@ variable "app_service_sku" {
 variable "web_app_name" {
   description = "Name for the Azure Web App (must be globally unique). (Required)"
   type        = string
-  
+
   validation {
-    condition = length(var.web_app_name) >= 2 && length(var.web_app_name) <= 60
+    condition     = length(var.web_app_name) >= 2 && length(var.web_app_name) <= 60
     error_message = "Web app name must be between 2 and 60 characters."
   }
 }
@@ -181,9 +181,9 @@ variable "app_insights_name" {
 variable "key_vault_name" {
   description = "Name for the Azure Key Vault (must be globally unique, 3-24 alphanumeric characters). (Required)"
   type        = string
-  
+
   validation {
-    condition = can(regex("^[a-zA-Z0-9-]{3,24}$", var.key_vault_name))
+    condition     = can(regex("^[a-zA-Z0-9-]{3,24}$", var.key_vault_name))
     error_message = "Key Vault name must be 3-24 characters, letters, numbers, and hyphens only."
   }
 }
@@ -212,67 +212,5 @@ variable "table_storage_messages_table" {
   default     = "messages"
 }
 
-# Enhanced Content Filter Configuration
-variable "content_filter_hate_severity" {
-  description = "Severity level for hate speech content filter (Low, Medium, High). (Default: High)"
-  type        = string
-  default     = "High"
-  
-  validation {
-    condition = contains(["Low", "Medium", "High"], var.content_filter_hate_severity)
-    error_message = "Hate speech filter severity must be one of: Low, Medium, High"
-  }
-}
-
-variable "content_filter_sexual_severity" {
-  description = "Severity level for sexual content filter (Low, Medium, High). (Default: High)"
-  type        = string
-  default     = "High"
-  
-  validation {
-    condition = contains(["Low", "Medium", "High"], var.content_filter_sexual_severity)
-    error_message = "Sexual content filter severity must be one of: Low, Medium, High"
-  }
-}
-
-variable "content_filter_violence_severity" {
-  description = "Severity level for violence content filter (Low, Medium, High). (Default: High)"
-  type        = string
-  default     = "High"
-  
-  validation {
-    condition = contains(["Low", "Medium", "High"], var.content_filter_violence_severity)
-    error_message = "Violence content filter severity must be one of: Low, Medium, High"
-  }
-}
-
-variable "content_filter_self_harm_severity" {
-  description = "Severity level for self-harm content filter (Low, Medium, High). (Default: High)"
-  type        = string
-  default     = "High"
-  
-  validation {
-    condition = contains(["Low", "Medium", "High"], var.content_filter_self_harm_severity)
-    error_message = "Self-harm content filter severity must be one of: Low, Medium, High"
-  }
-}
-
-variable "enable_custom_content_filters" {
-  description = "Enable custom content filter rules for school-specific vocabulary. (Default: true)"
-  type        = bool
-  default     = true
-}
-
-variable "custom_filter_patterns" {
-  description = "List of custom patterns for school-specific content filtering. (Default: school safety patterns)"
-  type        = list(string)
-  default     = [
-    "bully*",
-    "cheat*", 
-    "skip* class",
-    "truant*",
-    "vandal*",
-    "fight*",
-    "weapon*"
-  ]
-} 
+# Content filtering is managed through Azure AI Foundry portal
+# and configured via environment variables in the application 
