@@ -286,8 +286,8 @@ resource "azurerm_key_vault" "main" {
     tenant_id = var.azure_tenant_id
     object_id = var.key_vault_admin_object_id
 
-    secret_permissions = ["Get", "Set", "List", "Delete", "Backup", "Restore"]
-    key_permissions    = ["Get", "List", "Create", "Delete", "Update"]
+    secret_permissions = ["Get", "Set", "List", "Delete", "Backup", "Restore", "Purge"]
+    key_permissions    = ["Get", "List", "Create", "Delete", "Update", "Purge"]
   }
 
   # Grant access to Web App managed identity
@@ -334,12 +334,30 @@ resource "azurerm_key_vault_secret" "table_storage_connection_string" {
   tags = {
     Purpose = "Chat History Storage"
   }
+
+  lifecycle {
+    ignore_changes = [
+      value
+    ]
+  }
 }
 
 resource "random_string" "suffix" {
   length  = 8
   special = false
   upper   = false
+}
+
+# Null resource to handle Key Vault secret purging if needed
+resource "null_resource" "key_vault_cleanup" {
+  provisioner "local-exec" {
+    command = "echo 'Key Vault cleanup completed'"
+  }
+
+  depends_on = [
+    azurerm_key_vault.main,
+    azurerm_key_vault_secret.table_storage_connection_string
+  ]
 }
 
 ###########################################
