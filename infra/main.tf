@@ -168,7 +168,7 @@ resource "azurerm_linux_web_app" "main" {
     "ENABLE_CHAT_HISTORY"           = "true"
 
     # SQL Connection String
-    "SQL_CONNECTION_STRING" = azurerm_key_vault_secret.sql_connection_string.value
+    "SQL_CONNECTION_STRING" = local.sql_connection_string
   }
 
   # Enable managed identity for secure access
