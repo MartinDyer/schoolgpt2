@@ -193,25 +193,6 @@ variable "key_vault_admin_object_id" {
   type        = string
 }
 
-# Table Storage Configuration
-variable "table_storage_account_name" {
-  description = "Name for the Azure Storage Account for chat history (must be globally unique, 3-24 lowercase letters/numbers). (Auto-generated)"
-  type        = string
-  default     = null
-}
-
-variable "table_storage_conversations_table" {
-  description = "Name for the conversations table in Table Storage. (Default: conversations)"
-  type        = string
-  default     = "conversations"
-}
-
-variable "table_storage_messages_table" {
-  description = "Name for the messages table in Table Storage. (Default: messages)"
-  type        = string
-  default     = "messages"
-}
-
 # Content filtering is managed through Azure AI Foundry portal
 # and configured via environment variables in the application 
 

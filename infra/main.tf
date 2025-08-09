@@ -144,12 +144,6 @@ resource "azurerm_linux_web_app" "main" {
     "AI_FOUNDRY_CONTENT_FILTER_VIOLENCE"  = "2" # High filtering
     "AI_FOUNDRY_CONTENT_FILTER_SELF_HARM" = "2" # High filtering
 
-    # Table Storage Configuration for Chat History
-    "TABLE_STORAGE_CONNECTION_STRING"   = azurerm_storage_account.chat_history.primary_connection_string
-    "TABLE_STORAGE_CONVERSATIONS_TABLE" = "conversations"
-    "TABLE_STORAGE_MESSAGES_TABLE"      = "messages"
-    "TABLE_STORAGE_ENABLE_FEEDBACK"     = "false"
-
     # Application Insights for Monitoring
     "APPINSIGHTS_INSTRUMENTATIONKEY"        = azurerm_application_insights.main.instrumentation_key
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
@@ -190,36 +184,6 @@ resource "azurerm_linux_web_app" "main" {
   }
 }
 
-###########################################
-# Azure Table Storage for Chat History
-###########################################
-
-# Storage account for chat history (Table Storage)
-resource "azurerm_storage_account" "chat_history" {
-  name                     = "schoolchat${random_string.suffix.result}"
-  resource_group_name      = azurerm_resource_group.main.name
-  location                 = azurerm_resource_group.main.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  min_tls_version          = "TLS1_2"
-
-  tags = {
-    Environment = "School-Safe-AI"
-    Purpose     = "Chat History Storage"
-  }
-}
-
-# Table for storing conversations
-resource "azurerm_storage_table" "conversations" {
-  name                 = "conversations"
-  storage_account_name = azurerm_storage_account.chat_history.name
-}
-
-# Table for storing messages
-resource "azurerm_storage_table" "messages" {
-  name                 = "messages"
-  storage_account_name = azurerm_storage_account.chat_history.name
-}
 
 ###########################################
 # Application Insights - Enhanced Monitoring
@@ -328,22 +292,6 @@ resource "azurerm_key_vault_secret" "acr_password" {
   }
 }
 
-# Store Table Storage connection string in Key Vault
-resource "azurerm_key_vault_secret" "table_storage_connection_string" {
-  name         = "table-storage-connection-string"
-  value        = azurerm_storage_account.chat_history.primary_connection_string
-  key_vault_id = azurerm_key_vault.main.id
-
-  tags = {
-    Purpose = "Chat History Storage"
-  }
-
-  lifecycle {
-    ignore_changes = [
-      value
-    ]
-  }
-}
 
 ###########################################
 # Azure SQL for Audit Logging / App Data
@@ -422,8 +370,7 @@ resource "null_resource" "key_vault_cleanup" {
   }
 
   depends_on = [
-    azurerm_key_vault.main,
-    azurerm_key_vault_secret.table_storage_connection_string
+    azurerm_key_vault.main
   ]
 }
 
@@ -440,7 +387,7 @@ output "deployment_summary" {
     application_insights  = azurerm_application_insights.main.name
     key_vault             = azurerm_key_vault.main.name
     resource_group        = azurerm_resource_group.main.name
-    table_storage_account = azurerm_storage_account.chat_history.name
+    database               = azurerm_mssql_database.main.name
   }
 }
 
@@ -450,7 +397,7 @@ output "school_safe_configuration" {
     target_audience      = "Students Under 16"
     authentication       = "Entra ID Required"
     monitoring_enabled   = "Yes"
-    chat_history         = "Table Storage"
+    chat_history         = "Azure SQL"
     user_management      = "Entra ID"
   }
 }
@@ -488,14 +435,6 @@ output "ai_foundry_api_key" {
   sensitive = true
 }
 
-output "table_storage_connection_string" {
-  value     = azurerm_key_vault_secret.table_storage_connection_string.value
-  sensitive = true
-}
-
-output "table_storage_account_name" {
-  value = azurerm_storage_account.chat_history.name
-}
 
 output "container_registry_credentials" {
   value = {
