@@ -64,6 +64,9 @@ class _ChatHistorySettings(BaseSettings):
     account_key: Optional[str] = None
     conversations_container: str
     enable_feedback: bool = False
+    # SQL support
+    history_backend: Optional[str] = Field(default=None, validation_alias="HISTORY_BACKEND")
+    sql_connection_string: Optional[str] = Field(default=None, validation_alias="SQL_CONNECTION_STRING")
 
 
 class _PromptflowSettings(BaseSettings):

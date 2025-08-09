@@ -24,6 +24,7 @@ from azure.identity.aio import (
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.security.ms_defender_utils import get_msdefender_user_json
 from backend.history.cosmosdbservice import CosmosConversationClient
+from backend.history.sqlservice import SqlConversationClient
 from backend.settings import (
     app_settings,
     MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION
@@ -49,10 +50,10 @@ def create_app():
     @app.before_serving
     async def init():
         try:
-            app.cosmos_conversation_client = await init_cosmosdb_client()
+            app.cosmos_conversation_client = await init_sql_history_client()
             cosmos_db_ready.set()
         except Exception as e:
-            logging.exception("Failed to initialize CosmosDB client")
+            logging.exception("Failed to initialize SQL history client")
             app.cosmos_conversation_client = None
             raise e
     
@@ -206,36 +207,23 @@ async def openai_remote_azure_function_call(function_name, function_args):
 
     return response.text
 
-async def init_cosmosdb_client():
-    cosmos_conversation_client = None
-    if app_settings.chat_history:
-        try:
-            cosmos_endpoint = (
-                f"https://{app_settings.chat_history.account}.documents.azure.com:443/"
-            )
-
-            if not app_settings.chat_history.account_key:
-                async with DefaultAzureCredential() as cred:
-                    credential = cred
-                    
-            else:
-                credential = app_settings.chat_history.account_key
-
-            cosmos_conversation_client = CosmosConversationClient(
-                cosmosdb_endpoint=cosmos_endpoint,
-                credential=credential,
-                database_name=app_settings.chat_history.database,
-                container_name=app_settings.chat_history.conversations_container,
-                enable_message_feedback=app_settings.chat_history.enable_feedback,
-            )
-        except Exception as e:
-            logging.exception("Exception in CosmosDB initialization", e)
-            cosmos_conversation_client = None
-            raise e
-    else:
-        logging.debug("CosmosDB not configured")
-
-    return cosmos_conversation_client
+async def init_sql_history_client():
+    sql_client = None
+    try:
+        conn_str = os.environ.get("SQL_CONNECTION_STRING") or (
+            app_settings.chat_history.sql_connection_string if app_settings.chat_history else None
+        )
+        if not conn_str:
+            logging.debug("SQL history not configured (missing SQL_CONNECTION_STRING)")
+            return None
+        sql_client = SqlConversationClient(odbc_connection_string=conn_str)
+        success, err = await sql_client.ensure()
+        if not success:
+            raise Exception(f"Failed to ensure SQL schema: {err}")
+        return sql_client
+    except Exception as e:
+        logging.exception("Exception in SQL history initialization")
+        return None
 
 
 def prepare_model_args(request_body, request_headers):
@@ -650,6 +638,12 @@ async def add_conversation():
         request_body = await request.get_json()
         history_metadata["conversation_id"] = conversation_id
         request_body["history_metadata"] = history_metadata
+        # Ensure SQL schema exists (no-op if already present)
+        try:
+            if current_app.cosmos_conversation_client:
+                await current_app.cosmos_conversation_client.ensure()
+        except Exception:
+            pass
         return await conversation_internal(request_body, request.headers)
 
     except Exception as e:

@@ -214,3 +214,42 @@ variable "table_storage_messages_table" {
 
 # Content filtering is managed through Azure AI Foundry portal
 # and configured via environment variables in the application 
+
+# Azure SQL Configuration
+variable "sql_server_name" {
+  description = "Name for the Azure SQL Server (must be globally unique within Azure). (Required)"
+  type        = string
+}
+
+variable "sql_admin" {
+  description = "Administrator login name for Azure SQL Server. (Required)"
+  type        = string
+}
+
+variable "sql_password" {
+  description = "Administrator login password for Azure SQL Server. (Required)"
+  type        = string
+}
+
+variable "sql_db_name" {
+  description = "Name of the Azure SQL Database. (Required)"
+  type        = string
+}
+
+variable "sql_sku_name" {
+  description = "SKU/edition for the Azure SQL Database (e.g., Basic, S0, S1, S2, S3). (Default: S1)"
+  type        = string
+  default     = "S1"
+}
+
+variable "sql_azuread_admin_login" {
+  description = "Azure AD admin login (UPN/email) for the SQL Server (optional)."
+  type        = string
+  default     = null
+}
+
+variable "sql_azuread_admin_object_id" {
+  description = "Azure AD admin object ID for the SQL Server (optional)."
+  type        = string
+  default     = null
+} 

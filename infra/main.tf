@@ -173,6 +173,9 @@ resource "azurerm_linux_web_app" "main" {
     # Feature Flags
     "ENABLE_CONTENT_FILTER_LOGGING" = "true"
     "ENABLE_CHAT_HISTORY"           = "true"
+
+    # SQL Connection String
+    "SQL_CONNECTION_STRING" = azurerm_key_vault_secret.sql_connection_string.value
   }
 
   # Enable managed identity for secure access
@@ -342,6 +345,70 @@ resource "azurerm_key_vault_secret" "table_storage_connection_string" {
   }
 }
 
+###########################################
+# Azure SQL for Audit Logging / App Data
+###########################################
+
+# Azure SQL Server
+resource "azurerm_mssql_server" "main" {
+  name                         = var.sql_server_name
+  resource_group_name          = azurerm_resource_group.main.name
+  location                     = azurerm_resource_group.main.location
+  version                      = "12.0"
+  administrator_login          = var.sql_admin
+  administrator_login_password = var.sql_password
+
+  tags = {
+    Environment = "School-Safe-AI"
+    Purpose     = "SQL Server"
+  }
+}
+
+# Optional Azure AD Admin for SQL Server
+resource "azurerm_mssql_active_directory_administrator" "main" {
+  count               = var.sql_azuread_admin_object_id != null && var.sql_azuread_admin_login != null ? 1 : 0
+  server_id           = azurerm_mssql_server.main.id
+  login               = var.sql_azuread_admin_login
+  object_id           = var.sql_azuread_admin_object_id
+  tenant_id           = var.azure_tenant_id
+  azuread_authentication_only = false
+}
+
+# Azure SQL Database
+resource "azurerm_mssql_database" "main" {
+  name                = var.sql_db_name
+  server_id           = azurerm_mssql_server.main.id
+  sku_name            = var.sql_sku_name
+  max_size_gb         = 2
+  zone_redundant      = false
+  auto_pause_delay_in_minutes = 0
+
+  tags = {
+    Environment = "School-Safe-AI"
+    Purpose     = "Application Database"
+  }
+}
+
+# Build SQL connection string
+locals {
+  sql_connection_string = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.main.name};Persist Security Info=False;User ID=${var.sql_admin};Password=${var.sql_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+}
+
+# Store SQL connection string in Key Vault
+resource "azurerm_key_vault_secret" "sql_connection_string" {
+  name         = "sql-connection-string"
+  value        = local.sql_connection_string
+  key_vault_id = azurerm_key_vault.main.id
+
+  tags = {
+    Purpose = "Application Database"
+  }
+
+  lifecycle {
+    ignore_changes = [ value ]
+  }
+}
+
 resource "random_string" "suffix" {
   length  = 8
   special = false
@@ -435,5 +502,11 @@ output "container_registry_credentials" {
     username = azurerm_container_registry.acr.admin_username
     password = azurerm_container_registry.acr.admin_password
   }
+  sensitive = true
+}
+
+# Output for SQL connection string (sensitive)
+output "sql_connection_string" {
+  value     = azurerm_key_vault_secret.sql_connection_string.value
   sensitive = true
 }
