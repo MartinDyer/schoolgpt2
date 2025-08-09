@@ -4,8 +4,9 @@
 
 # Basic Infrastructure Variables
 variable "resource_group_name" {
-  description = "Name for the Azure Resource Group. (Required)"
+  description = "Name for the Azure Resource Group. (Optional: auto-generated if not provided)"
   type        = string
+  default     = null
 }
 
 variable "location" {

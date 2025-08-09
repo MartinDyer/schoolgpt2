@@ -10,7 +10,7 @@ provider "azurerm" {
 
 # Resource Group
 resource "azurerm_resource_group" "main" {
-  name     = var.resource_group_name
+  name     = coalesce(var.resource_group_name, "${replace(lower(var.school_name), " ", "-")}-${var.environment}-rg")
   location = var.location
 
   tags = {

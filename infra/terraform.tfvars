@@ -7,7 +7,6 @@
 # Basic Infrastructure (Will be auto-generated for each school)
 resource_group_name   = ""
 location              = "uksouth"
-azure_subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126" # REPLACE_WITH_YOUR_SUBSCRIPTION_ID
 azure_tenant_id       = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea" # REPLACE_WITH_YOUR_TENANT_ID
 
 # School Configuration (Auto-filled by setup workflow)
