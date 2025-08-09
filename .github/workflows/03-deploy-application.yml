@@ -128,7 +128,7 @@ jobs:
           echo "  Web App: $WEB_APP_NAME"
           echo "  Resource Group: $RESOURCE_GROUP"
           echo "  Key Vault: $KEY_VAULT_NAME"
-          echo "  Table Storage: Configured"
+          echo "  SQL: Configured"
           echo "  AI Foundry: Configured"
           
           # Set outputs for next steps

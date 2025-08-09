@@ -58,13 +58,7 @@ app_service_sku       = "B2"                                     # B1(small), B2
 docker_image          = "schoolgpt-app"                          # Docker image name
 docker_tag            = "latest"                                 # Docker image tag
 
-#################################################################
-# Table Storage Configuration (Auto-configured)
-#################################################################
-
-# table_storage_account_name = "yourschool-chat"                 # Auto-generated with random suffix
-table_storage_conversations_table = "conversations"              # Table for chat conversations
-table_storage_messages_table = "messages"                        # Table for chat messages
+## SQL is used for chat history and audits. No Table Storage configuration needed.
 
 #################################################################
 # Application Insights Configuration
