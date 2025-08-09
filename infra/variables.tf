@@ -198,23 +198,27 @@ variable "key_vault_admin_object_id" {
 
 # Azure SQL Configuration
 variable "sql_server_name" {
-  description = "Name for the Azure SQL Server (must be globally unique within Azure). (Required)"
+  description = "Name for the Azure SQL Server (must be globally unique within Azure). If not provided, a name will be auto-generated."
   type        = string
+  default     = null
 }
 
 variable "sql_admin" {
-  description = "Administrator login name for Azure SQL Server. (Required)"
+  description = "Administrator login name for Azure SQL Server. (Default: sqladminuser)"
   type        = string
+  default     = "sqladminuser"
 }
 
 variable "sql_password" {
-  description = "Administrator login password for Azure SQL Server. (Required)"
+  description = "Administrator login password for Azure SQL Server. If not provided, a strong password will be auto-generated and stored in Key Vault."
   type        = string
+  default     = null
 }
 
 variable "sql_db_name" {
-  description = "Name of the Azure SQL Database. (Required)"
+  description = "Name of the Azure SQL Database. (Default: schoolgptdb)"
   type        = string
+  default     = "schoolgptdb"
 }
 
 variable "sql_sku_name" {

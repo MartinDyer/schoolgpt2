@@ -297,14 +297,33 @@ resource "azurerm_key_vault_secret" "acr_password" {
 # Azure SQL for Audit Logging / App Data
 ###########################################
 
+# Auto values for SQL when not provided
+locals {
+  effective_sql_server_name = var.sql_server_name != null && length(var.sql_server_name) > 0 ? var.sql_server_name : "schoolsql${random_string.suffix.result}"
+}
+
+resource "random_password" "sql_admin" {
+  length  = 20
+  special = true
+  upper   = true
+  lower   = true
+  numeric = true
+  # Exclude confusing/shell-sensitive characters
+  override_characters = "!@#%^*-_=+"
+}
+
+locals {
+  effective_sql_password = var.sql_password != null && length(var.sql_password) > 0 ? var.sql_password : random_password.sql_admin.result
+}
+
 # Azure SQL Server
 resource "azurerm_mssql_server" "main" {
-  name                         = var.sql_server_name
+  name                         = local.effective_sql_server_name
   resource_group_name          = azurerm_resource_group.main.name
   location                     = azurerm_resource_group.main.location
   version                      = "12.0"
   administrator_login          = var.sql_admin
-  administrator_login_password = var.sql_password
+  administrator_login_password = local.effective_sql_password
 
   tags = {
     Environment = "School-Safe-AI"
@@ -339,7 +358,7 @@ resource "azurerm_mssql_database" "main" {
 
 # Build SQL connection string
 locals {
-  sql_connection_string = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.main.name};Persist Security Info=False;User ID=${var.sql_admin};Password=${var.sql_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+  sql_connection_string = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.main.name};Persist Security Info=False;User ID=${var.sql_admin};Password=${local.effective_sql_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
 }
 
 # Store SQL connection string in Key Vault
