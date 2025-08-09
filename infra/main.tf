@@ -310,8 +310,8 @@ resource "random_password" "sql_admin" {
   upper   = true
   lower   = true
   numeric = true
-  # Exclude confusing/shell-sensitive characters
-  override_characters = "!@#%^*-_=+"
+  # Restrict allowed special characters for broader provider compatibility
+  override_special = "!@#%^*-_=+"
 }
 
 locals {
@@ -333,15 +333,8 @@ resource "azurerm_mssql_server" "main" {
   }
 }
 
-# Optional Azure AD Admin for SQL Server
-resource "azurerm_mssql_active_directory_administrator" "main" {
-  count               = var.sql_azuread_admin_object_id != null && var.sql_azuread_admin_login != null ? 1 : 0
-  server_id           = azurerm_mssql_server.main.id
-  login               = var.sql_azuread_admin_login
-  object_id           = var.sql_azuread_admin_object_id
-  tenant_id           = var.azure_tenant_id
-  azuread_authentication_only = false
-}
+# Optional Azure AD Admin for SQL Server (removed for provider compatibility)
+# Configure AAD admin separately via portal or az CLI if required.
 
 # Azure SQL Database
 resource "azurerm_mssql_database" "main" {
