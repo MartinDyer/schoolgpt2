@@ -343,7 +343,7 @@ resource "azurerm_mssql_database" "main" {
   sku_name            = var.sql_sku_name
   max_size_gb         = 2
   zone_redundant      = false
-  auto_pause_delay_in_minutes = 0
+  auto_pause_delay_in_minutes = -1
 
   tags = {
     Environment = "School-Safe-AI"
