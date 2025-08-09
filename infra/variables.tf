@@ -14,11 +14,6 @@ variable "location" {
   default     = "uksouth"
 }
 
-variable "azure_subscription_id" {
-  description = "Azure Subscription ID (Required for provider block)."
-  type        = string
-}
-
 variable "azure_tenant_id" {
   description = "Azure Tenant ID (for Key Vault and access policy). (Required)"
   type        = string
@@ -193,24 +188,48 @@ variable "key_vault_admin_object_id" {
   type        = string
 }
 
-# Table Storage Configuration
-variable "table_storage_account_name" {
-  description = "Name for the Azure Storage Account for chat history (must be globally unique, 3-24 lowercase letters/numbers). (Auto-generated)"
+# Content filtering is managed through Azure AI Foundry portal
+# and configured via environment variables in the application 
+
+# Azure SQL Configuration
+variable "sql_server_name" {
+  description = "Name for the Azure SQL Server (must be globally unique within Azure). If not provided, a name will be auto-generated."
   type        = string
   default     = null
 }
 
-variable "table_storage_conversations_table" {
-  description = "Name for the conversations table in Table Storage. (Default: conversations)"
+variable "sql_admin" {
+  description = "Administrator login name for Azure SQL Server. (Default: sqladminuser)"
   type        = string
-  default     = "conversations"
+  default     = "sqladminuser"
 }
 
-variable "table_storage_messages_table" {
-  description = "Name for the messages table in Table Storage. (Default: messages)"
+variable "sql_password" {
+  description = "Administrator login password for Azure SQL Server. If not provided, a strong password will be auto-generated and stored in Key Vault."
   type        = string
-  default     = "messages"
+  default     = null
 }
 
-# Content filtering is managed through Azure AI Foundry portal
-# and configured via environment variables in the application 
+variable "sql_db_name" {
+  description = "Name of the Azure SQL Database. (Default: schoolgptdb)"
+  type        = string
+  default     = "schoolgptdb"
+}
+
+variable "sql_sku_name" {
+  description = "SKU/edition for the Azure SQL Database (e.g., Basic, S0, S1, S2, S3). (Default: S1)"
+  type        = string
+  default     = "S1"
+}
+
+variable "sql_azuread_admin_login" {
+  description = "Azure AD admin login (UPN/email) for the SQL Server (optional)."
+  type        = string
+  default     = null
+}
+
+variable "sql_azuread_admin_object_id" {
+  description = "Azure AD admin object ID for the SQL Server (optional)."
+  type        = string
+  default     = null
+} 
