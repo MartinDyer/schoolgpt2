@@ -14,11 +14,6 @@ variable "location" {
   default     = "uksouth"
 }
 
-variable "azure_subscription_id" {
-  description = "Azure Subscription ID (Required for provider block)."
-  type        = string
-}
-
 variable "azure_tenant_id" {
   description = "Azure Tenant ID (for Key Vault and access policy). (Required)"
   type        = string
