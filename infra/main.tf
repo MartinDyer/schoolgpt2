@@ -168,7 +168,7 @@ resource "azurerm_linux_web_app" "main" {
     "ENABLE_CHAT_HISTORY"           = "true"
 
     # SQL Connection String
-    "SQL_CONNECTION_STRING" = azurerm_key_vault_secret.sql_connection_string.value
+    "SQL_CONNECTION_STRING" = local.sql_connection_string
   }
 
   # Enable managed identity for secure access
@@ -256,12 +256,12 @@ resource "azurerm_key_vault" "main" {
     key_permissions    = ["Get", "List", "Create", "Delete", "Update", "Purge"]
   }
 
-  # Grant access to Web App managed identity
+  # Grant access to the current Azure service principal running Terraform
   access_policy {
     tenant_id = var.azure_tenant_id
-    object_id = azurerm_linux_web_app.main.identity[0].principal_id
+    object_id = data.azurerm_client_config.current.object_id
 
-    secret_permissions = ["Get", "List"]
+    secret_permissions = ["Get", "Set", "List", "Delete", "Backup", "Restore", "Purge"]
   }
 
   tags = {
@@ -269,6 +269,9 @@ resource "azurerm_key_vault" "main" {
     Purpose     = "Secure Configuration Storage"
   }
 }
+
+# Current client for access policy
+data "azurerm_client_config" "current" {}
 
 # Store ACR credentials in Key Vault
 resource "azurerm_key_vault_secret" "acr_username" {
