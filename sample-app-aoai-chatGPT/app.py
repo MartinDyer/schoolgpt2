@@ -1054,4 +1054,5 @@ async def generate_title(conversation_messages) -> str:
         return messages[-2]["content"]
 
 
+# Instantiate the Quart app for ASGI servers (gunicorn/uvicorn) to discover
 app = create_app()
