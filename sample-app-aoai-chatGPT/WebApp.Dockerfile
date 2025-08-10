@@ -28,4 +28,7 @@ COPY --from=frontend /home/node/app/static  /usr/src/app/static/
 WORKDIR /usr/src/app  
 EXPOSE 80  
 
-CMD ["gunicorn"  , "-b", "0.0.0.0:80", "app:app"]
+ENV PYTHONUNBUFFERED=1
+
+# Use Gunicorn with Uvicorn workers to serve ASGI (Quart)
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "2", "-t", "120", "-b", "0.0.0.0:80", "app:app"]
