@@ -10,12 +10,12 @@ location              = "uksouth"
 azure_tenant_id       = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea" # REPLACE_WITH_YOUR_TENANT_ID
 
 # School Configuration (Auto-filled by setup workflow)
-school_name = "Luke-Test"
+school_name = "Blundells-Demo"
 alert_email = "admin@myschool.edu" # REPLACE: Your school IT admin email
 
 # Azure AI Foundry Configuration (Auto-generated unique names)
-ai_foundry_name      = "luketestaifoundrya2a6"
-ai_foundry_subdomain = "luketestaia2a6"
+ai_foundry_name      = "blundellaifoundrybb44"
+ai_foundry_subdomain = "blundellaibb44"
 azure_openai_model                 = "gpt-35-turbo" # Options: gpt-35-turbo, gpt-4, gpt-4o
 azure_openai_model_version         = "1106"
 azure_openai_model_deployment_name = "school-safe-chat"
@@ -23,18 +23,18 @@ model_sku_name                     = "Standard"
 model_capacity                     = 80 # Tokens per minute (reduced to fit quota)
 
 # Container Registry and App Service (Auto-generated unique names)
-acr_name              = "luketestacra2a6"
+acr_name              = "blundellacrbb44"
 app_service_plan_name = "schoolgpt-asp"
 app_service_sku       = "B2" # B1/B2/B3 for basic, S1/S2/S3 for standard
-web_app_name          = "luketestwebappa2a6"
-acr_login_server      = "luketestacra2a6.azurecr.io"
+web_app_name          = "blundellwebappbb44"
+acr_login_server      = "blundellacrbb44.azurecr.io"
 
 # Docker Configuration
 docker_image = "schoolgpt-app"
 docker_tag   = "latest"
 
 # SQL Database Configuration (Auto-generated unique names)
-sql_server_name       = "luketestsqlsrva2a6"
+sql_server_name       = "blundellsqlsrvbb44"
 sql_admin                   = "sqladminuser"
 sql_password                = "MyStrongP@ssw0rd123!" # REPLACE: Use a secure password
 sql_db_name                 = "schoolgptdb"
@@ -46,7 +46,7 @@ sql_azuread_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb" # REPLACE_W
 app_insights_name = "schoolgpt-ai"
 
 # Azure Key Vault (Auto-generated unique names)
-key_vault_name            = "luketestkva2a6"
+key_vault_name            = "blundellkvbb44"
 key_vault_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb" # REPLACE_WITH_YOUR_OBJECT_ID
 
 # Content filtering is managed through Azure AI Foundry portal
