@@ -27,14 +27,24 @@ from sqlalchemy.engine import Engine
 
 def _parse_odbc_sql_server_connection_string(conn_str: str) -> Tuple[str, str, str, str, Dict[str, str]]:
     # Example: Server=tcp:example.database.windows.net,1433;Initial Catalog=db;User ID=user;Password=pass;Encrypt=True;TrustServerCertificate=False
-    parts = dict(
+    """parts = dict(
         (k.strip().lower(), v.strip())
         for k, v in (
             item.split("=", 1)
             for item in re.split(r";(?=(?:[^"]*"[^"]*")*[^"]*$)", conn_str) if item
-            if "=" in item
+    if "=" in item
+        )
+    )"""
+
+    parts = dict(
+        (k.strip().lower(), v.strip())
+        for k, v in (
+            item.split("=", 1)
+            for item in re.split(r';(?=(?:[^"]*"[^"]*")*[^"]*$)', conn_str)
+            if item and "=" in item
         )
     )
+
     server = parts.get("server", "").replace("tcp:", "").strip()
     if "," not in server and ":" in server:
         # some strings include tcp:server,1433
