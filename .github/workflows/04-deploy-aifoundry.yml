@@ -4,36 +4,39 @@ on:
   workflow_dispatch:
     inputs:
       resourceGroup:
-        description: "Resource group name"
+        description: "Target Azure Resource Group"
+        type: string
+        default: "school-safe-gpt-rg"
         required: true
-        default: "AI-Foundry-RG"
       location:
-        description: "Azure region (for RG creation if needed)"
-        required: true
-        default: "UK South"
+        description: "Azure region for the RG (e.g., westeurope)"
+        type: string
+        default: "Uk South"
       aiFoundryName:
-        description: "Azure AI Foundry account name"
+        description: "Azure AI Foundry (Cognitive Services) account name"
+        type: string
+        default: "school-safe-gpt-AI-Foundry"
         required: true
-        default: "School-Safe-GPT-aifoundry"
       aiProjectName:
         description: "Foundry project name"
+        type: string
         required: true
-        default: "School-Safe-GPT-project"
+        default: "school-safe-gpt-AI-Project"
       raiPolicyName:
         description: "RAI policy name"
-        required: false
-        default: "School-Safe-GPT-high-filter"
+        type: string
+        default: "school-safe-GPT-high-filter"
+        
 
 permissions:
-  id-token: write   # for OIDC login
+  id-token: write
   contents: read
 
 env:
   BICEP_FILE: infra/AI-Foundry/main.bicep
 
 jobs:
-  validate:
-    name: Validate / What-If
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,38 +46,34 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Ensure Resource Group (CLI)
+        uses: azure/cli@v2
+        with:
+          azcliversion: 2.63.0
+          inlineScript: |
+            set -euo pipefail
+            az group create \
+              --name "${{ github.event.inputs.resourceGroup }}" \
+              --location "${{ github.event.inputs.location }}"
 
-      - name: deploy
+      - name: Deploy Bicep
+        id: deploy
         uses: azure/arm-deploy@v2
         with:
           scope: resourceGroup
-          deploymentMode: Incremental
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ github.event.inputs.resourceGroup }}
           template: ${{ env.BICEP_FILE }}
+          deploymentName: aifoundry-${{ github.run_number }}
           parameters: >
-            aiFoundryName=School-SAFE-GPT-aifoundry
-            aiProjectName=School-SAFE-GPT-project
-            raiPolicyName=high-filter
-          
+            location=${{ github.event.inputs.location }}
+            aiFoundryName=${{ github.event.inputs.aiFoundryName }}
+            aiProjectName=${{ github.event.inputs.aiProjectName }}
+            raiPolicyName=${{ github.event.inputs.raiPolicyName }}
 
-  deploy:
-    name: Deploy to Azure
-    runs-on: ubuntu-latest
-    # Deploy on push to main, or when manually dispatched
-    # # if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Set deploy variables
-        id: vars
+      - name: Show Outputs
         run: |
-          # Use workflow_dispatch inputs if provided; else fall back to defaults below.
-          echo "RG=${{ github.event.inputs.resourceGroup || 'myRG' }}" >> $GITHUB_OUTPUT
-          echo "LOC=${{ github.event.inputs.location || 'westeurope' }}" >> $GITHUB_OUTPUT
-          echo "AIACC=${{ github.event.inputs.aiFoundryName || 'my-aifoundry' }}" >> $GITHUB_OUTPUT
-          echo "AIPROJ=${{ github.event.inputs.aiProjectName || 'my-project' }}"
+          echo "AI Account ID:       ${{ steps.deploy.outputs.aiAccountId }}"
+          echo "Project ID:          ${{ steps.deploy.outputs.projectId }}"
+          echo "RAI Policy ID:       ${{ steps.deploy.outputs.raiPolicyId }}"
+          echo "RAI Policy Name Out: ${{ steps.deploy.outputs.raiPolicyNameOut }}"
