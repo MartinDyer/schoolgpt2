@@ -11,7 +11,7 @@ on:
       location:
         description: "Azure region for the RG (e.g., westeurope)"
         type: string
-        default: "Uk South"
+        default: "UkSouth"
       aiFoundryName:
         description: "Azure AI Foundry (Cognitive Services) account name"
         type: string
