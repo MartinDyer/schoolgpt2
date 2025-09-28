@@ -51,9 +51,8 @@ jobs:
         with:
           azcliversion: 2.63.0
           inlineScript: |
-             az group create --name "School-Safe-GPT-RG-001" -location "uksouth"
-            #   --name "${{ github.event.inputs.resourceGroup }}" \
-            #   --location "${{ github.event.inputs.location }}"
+            az group create --name "School-Safe-GPT-RG-001" --location "uksouth"
+
 
       - name: Deploy Bicep
         id: deploy
