@@ -1,0 +1,91 @@
+name: Deploy AI Foundry Bicep
+
+on:
+  workflow_dispatch:
+    inputs:
+      resourceGroup:
+        description: "Resource group name"
+        required: true
+        default: "AI-Foundry-RG"
+      location:
+        description: "Azure region (for RG creation if needed)"
+        required: true
+        default: "UK South"
+      aiFoundryName:
+        description: "Azure AI Foundry account name"
+        required: true
+        default: "School-Safe-GPT-aifoundry"
+      aiProjectName:
+        description: "Foundry project name"
+        required: true
+        default: "School-Safe-GPT-project"
+      raiPolicyName:
+        description: "RAI policy name"
+        required: false
+        default: "School-Safe-GPT-high-filter"
+
+permissions:
+  id-token: write   # for OIDC login
+  contents: read
+
+env:
+  BICEP_FILE: infra/AI-Foundry/main.bicep
+
+jobs:
+  validate:
+    name: Validate / What-If
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Ensure resource group exists (no-op if present)
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az group create \
+              --name "${{ github.event.pull_request.base.repo.owner.login }}-rg-${{ github.event.pull_request.number }}" \
+              --location "westeurope"
+
+      - name: What-If deployment
+        uses: azure/arm-deploy@v2
+        with:
+          scope: resourcegroup
+          region: westeurope
+          resourceGroupName: ${{ github.event.pull_request.base.repo.owner.login }}-rg-${{ github.event.pull_request.number }}
+          deploymentMode: Incremental
+          template: ${{ env.BICEP_FILE }}
+          parameters: >
+            aiFoundryName=pr-${{ github.event.pull_request.number }}-aifoundry
+            aiProjectName=pr-${{ github.event.pull_request.number }}-project
+            raiPolicyName=high-filter
+          additionalArguments: --what-if
+
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    # Deploy on push to main, or when manually dispatched
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set deploy variables
+        id: vars
+        run: |
+          # Use workflow_dispatch inputs if provided; else fall back to defaults below.
+          echo "RG=${{ github.event.inputs.resourceGroup || 'myRG' }}" >> $GITHUB_OUTPUT
+          echo "LOC=${{ github.event.inputs.location || 'westeurope' }}" >> $GITHUB_OUTPUT
+          echo "AIACC=${{ github.event.inputs.aiFoundryName || 'my-aifoundry' }}" >> $GITHUB_OUTPUT
+          echo "AIPROJ=${{ github.event.inputs.aiProjectName || 'my-project' }}"

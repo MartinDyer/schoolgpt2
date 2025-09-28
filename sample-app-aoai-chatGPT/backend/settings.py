@@ -16,10 +16,12 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_snake
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Dict
 from typing_extensions import Self
 from quart import Request
 from backend.utils import parse_multi_columns, generateFilterString
+
+
 
 DOTENV_PATH = os.environ.get(
     "DOTENV_PATH",
@@ -114,13 +116,13 @@ class _AzureOpenAISettings(BaseSettings):
     stream: bool = True
     stop_sequence: Optional[List[str]] = None
     seed: Optional[int] = None
-    choices_count: Optional[conint(ge=1, le=128)] = Field(default=1, serialization_alias="n")
+    choices_count: ChoicesCount = Field(default=1, alias="n")
     user: Optional[str] = None
-    tools: Optional[conlist(_AzureOpenAITool, min_length=1)] = None
+    tools: Optional[conlist(str, min_length=1)] = None  # replace str with your _AzureOpenAITool
     tool_choice: Optional[str] = None
-    logit_bias: Optional[dict] = None
-    presence_penalty: Optional[confloat(ge=-2.0, le=2.0)] = 0.0
-    frequency_penalty: Optional[confloat(ge=-2.0, le=2.0)] = 0.0
+    logit_bias: Optional[Dict] = None
+    presence_penalty: confloat(ge=-2.0, le=2.0) = 0.0
+    frequency_penalty: confloat(ge=-2.0, le=2.0) = 0.0 
     system_message: str = "You are an AI assistant that helps people find information."
     preview_api_version: str = MINIMUM_SUPPORTED_AZURE_OPENAI_PREVIEW_API_VERSION
     embedding_endpoint: Optional[str] = None
