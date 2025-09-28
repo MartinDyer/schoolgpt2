@@ -1,4 +1,4 @@
-name: Deploy AI Foundry Bicep
+name: 🚀 Deploy AI Foundry Bicep
 
 on:
   workflow_dispatch:
@@ -51,9 +51,9 @@ jobs:
         with:
           azcliversion: 2.63.0
           inlineScript: |
-             az group create \
-              --name "${{ github.event.inputs.resourceGroup }}" \
-              --location "${{ github.event.inputs.location }}"
+             az group create --name "School-Safe-GPT-RG-001" -location "UK South"
+            #   --name "${{ github.event.inputs.resourceGroup }}" \
+            #   --location "${{ github.event.inputs.location }}"
 
       - name: Deploy Bicep
         id: deploy
