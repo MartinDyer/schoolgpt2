@@ -51,8 +51,7 @@ jobs:
         with:
           azcliversion: 2.63.0
           inlineScript: |
-            set -euo pipefail
-            az group create \
+             az group create \
               --name "${{ github.event.inputs.resourceGroup }}" \
               --location "${{ github.event.inputs.location }}"
 
