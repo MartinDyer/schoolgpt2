@@ -44,19 +44,19 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    #   - name: What-If deployment
-    #     uses: azure/arm-deploy@v2
-    #     with:
-    #       scope: resourcegroup
-    #       region: westeurope
-    #       resourceGroupName: ${{ github.event.pull_request.base.repo.owner.login }}-rg-${{ github.event.pull_request.number }}
-    #       deploymentMode: Incremental
-    #       template: ${{ env.BICEP_FILE }}
-    #       parameters: >
-    #         aiFoundryName=pr-${{ github.event.pull_request.number }}-aifoundry
-    #         aiProjectName=pr-${{ github.event.pull_request.number }}-project
-    #         raiPolicyName=high-filter
-    #       additionalArguments: --what-if
+      - name: What-If deployment
+        uses: azure/arm-deploy@v2
+        with:
+          scope: resourcegroup
+          region: westeurope
+          resourceGroupName: School-SAFE-GPT-rg
+          deploymentMode: Incremental
+          template: ${{ env.BICEP_FILE }}
+          parameters: >
+            aiFoundryName=School-SAFE-GPT-aifoundry
+            aiProjectName=School-SAFE-GPT-project
+            raiPolicyName=high-filter
+          additionalArguments: --what-if
 
   deploy:
     name: Deploy to Azure
