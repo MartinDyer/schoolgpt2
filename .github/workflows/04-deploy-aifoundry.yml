@@ -51,7 +51,7 @@ jobs:
         with:
           azcliversion: 2.63.0
           inlineScript: |
-             az group create --name "School-Safe-GPT-RG-001" -location "UK South"
+             az group create --name "School-Safe-GPT-RG-001" -location "UKSouth"
             #   --name "${{ github.event.inputs.resourceGroup }}" \
             #   --location "${{ github.event.inputs.location }}"
 
