@@ -51,7 +51,7 @@ jobs:
         with:
           azcliversion: 2.63.0
           inlineScript: |
-            az group create --name "School-Safe-GPT-RG-001" --location "uksouth"
+            az group create --name School-Safe-GPT-RG-001 --location uksouth
 
 
       - name: Deploy Bicep
