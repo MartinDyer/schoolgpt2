@@ -1,5 +1,5 @@
 @description('Azure region for all resources')
-param location string = 'UK South'
+param location string = 'UKSouth'
 
 @description('Name of the Azure AI Foundry (Cognitive Services) account')
 param aiFoundryName string = 'School-Safe-GPT-${uniqueString(resourceGroup().id)}'

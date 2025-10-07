@@ -64,7 +64,7 @@ jobs:
           template: ${{ env.BICEP_FILE }}
           deploymentName: aifoundry-${{ github.run_number }}
           parameters: >
-            location=${{ github.event.inputs.location }}
+            location="uksouth"
             aiFoundryName=${{ github.event.inputs.aiFoundryName }}
             aiProjectName=${{ github.event.inputs.aiProjectName }}
             raiPolicyName=${{ github.event.inputs.raiPolicyName }}
