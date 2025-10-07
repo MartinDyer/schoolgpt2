@@ -22,6 +22,7 @@ param accountKind string = 'AIServices'
 ])
 param skuName string = 'S0'
 
+
 /* ------------------------------
    Azure AI Foundry (account)
 ---------------------------------*/

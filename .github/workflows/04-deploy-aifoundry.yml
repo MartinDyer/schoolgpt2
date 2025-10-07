@@ -46,12 +46,12 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Ensure Resource Group (CLI)
+      - name: Deploy Resource Group via CLI
         uses: azure/cli@v2
         with:
-          azcliversion: 2.63.0
+          azcliversion: latest
           inlineScript: |
-            az group create --name School-Safe-GPT-RG-001 --location uksouth
+                az group create --name School-Safe-GPT-RG-001 --location uksouth
 
 
       - name: Deploy Bicep
