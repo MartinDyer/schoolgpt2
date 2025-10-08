@@ -1,11 +1,10 @@
-@description('Azure resource group for all resources')
-param resourceGroupName string = 'School-Safe-GPT-RG-001'
+targetScope = 'resourceGroup'
 
 @description('Azure region for all resources')
 param location string = 'UKSouth'
 
 @description('Name of the Azure AI Foundry (Cognitive Services) account')
-param aiFoundryName string = 'School-Safe-GPT-${uniqueString(resourceGroup().id)}'
+param aiFoundryName string = 'school-safe-gpt-${uniqueString(resourceGroup().id)}'
 
 @description('Name of the Foundry project to create under the account')
 param aiProjectName string = 'school-safe-gpt-project'
@@ -20,18 +19,13 @@ param raiPolicyName string = 'high-filter'
 param accountKind string = 'AIServices'
 
 @description('SKU name for the Cognitive Services account')
-@allowed([
-  'S0'
-])
+@allowed([ 'S0' ])
 param skuName string = 'S0'
 
-
-/* ------------------------------
-   Azure AI Foundry (account)
----------------------------------*/
+/* -------- Azure AI Foundry (account) -------- */
 module aiAccountModule './aiAccount.bicep' = {
   name: 'aiAccountDeployment'
-  scope: resourceGroup(resourceGroupName)
+  // NOTE: no `scope:` here — we're at RG scope already
   params: {
     aiFoundryName: aiFoundryName
     location: location
@@ -40,11 +34,15 @@ module aiAccountModule './aiAccount.bicep' = {
   }
 }
 
-/* ------------------------------
-   Foundry Project (child of account)
----------------------------------*/
-resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
-  name: '${aiAccountModule.name}/${aiProjectName}'
+/* -------- Reference the account as an existing parent -------- */
+resource aiAccount 'Microsoft.CognitiveServices/accounts@2024-10-01' existing = {
+  name: aiFoundryName
+}
+
+/* -------- Foundry Project (child of account) -------- */
+resource project 'Microsoft.CognitiveServices/accounts/projects@2024-10-01' = {
+  name: aiProjectName
+  parent: aiAccount
   location: location
   properties: {
     displayName: aiProjectName
@@ -52,124 +50,27 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
   }
 }
 
-/* ------------------------------
-   RAI Policy (Content Filters)
-   Applies HIGH severity filtering to both Prompt & Completion
-   Categories: Hate, Sexual, Violence, SelfHarm
-   Mode: Blocking (enforce synchronous blocking)
----------------------------------*/
-resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2025-06-01' = {
-  name: '${aiAccountModule.name}/${raiPolicyName}'
+/* -------- RAI Policy (child of account) -------- */
+resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
+  name: raiPolicyName
+  parent: aiAccount
   properties: {
     basePolicyName: raiPolicyName
-    mode: 'Blocking' // or 'Asynchronous_filter' per org preference
+    mode: 'Blocking'
     contentFilters: [
-      // Hate
-      {
-        name: 'Hate'
-        severityThreshold: 'High'
-        source: 'Prompt'
-        enabled: true
-        blocking: true
-      }
-      {
-        name: 'Hate'
-        severityThreshold: 'High'
-        source: 'Completion'
-        enabled: true
-        blocking: true
-      }
-
-      // Sexual
-      {
-        name: 'Sexual'
-        severityThreshold: 'High'
-        source: 'Prompt'
-        enabled: true
-        blocking: true
-      }
-      {
-        name: 'Sexual'
-        severityThreshold: 'High'
-        source: 'Completion'
-        enabled: true
-        blocking: true
-      }
-
-      // Violence
-      {
-        name: 'Violence'
-        severityThreshold: 'High'
-        source: 'Prompt'
-        enabled: true
-        blocking: true
-      }
-      {
-        name: 'Violence'
-        severityThreshold: 'High'
-        source: 'Completion'
-        enabled: true
-        blocking: true
-      }
-
-      // Self-harm
-      {
-        name: 'SelfHarm'
-        severityThreshold: 'High'
-        source: 'Prompt'
-        enabled: true
-        blocking: true
-      }
-      {
-        name: 'SelfHarm'
-        severityThreshold: 'High'
-        source: 'Completion'
-        enabled: true
-        blocking: true
-      }
+      { name: 'Hate',      severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
+      { name: 'Hate',      severityThreshold: 'High', source: 'Completion', enabled: true, blocking: true }
+      { name: 'Sexual',    severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
+      { name: 'Sexual',    severityThreshold: 'High', source: 'Completion', enabled: true, blocking: true }
+      { name: 'Violence',  severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
+      { name: 'Violence',  severityThreshold: 'High', source: 'Completion', enabled: true, blocking: true }
+      { name: 'SelfHarm',  severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
+      { name: 'SelfHarm',  severityThreshold: 'High', source: 'Completion', enabled: true, blocking: true }
     ]
-
-    // Optional: attach custom blocklists later, e.g. for specific phrases.
-    // customBlocklists: [
-    //   {
-    //     blocklistName: 'my-phrases'
-    //     source: 'Prompt'
-    //     blocking: true
-    //   }
-    // ]
   }
 }
 
-/* ------------------------------
-   (Optional) Example: attach the policy when you deploy a model
-   Uncomment & parameterize if you want to deploy a model now.
-   Resource type supports `properties.raiPolicyName`.
-   Docs: Microsoft.CognitiveServices/accounts/deployments
----------------------------------*/
-// @description('Name of an example deployment (uncomment to use)')
-// param deploymentName string = 'gpt-4o-mini'
-//
-// resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = {
-//   name: '${aiAccount.name}/${deploymentName}'
-//   sku: {
-//     name: 'GlobalStandard' // depends on model & region
-//     capacity: 1
-//   }
-//   properties: {
-//     model: {
-//       name: 'gpt-4o-mini'  // ensure availability in your region
-//       publisher: 'OpenAI'
-//       format: 'OpenAI'
-//       version: 'latest'
-//     }
-//     raiPolicyName: raiPolicyName
-//   }
-// }
-
-/* ------------------------------
-   Outputs
----------------------------------*/
-output aiAccountId string = aiAccountModule.outputs.id
-output projectId string = project.id
+output aiAccountId string = aiAccount.id
+output projectId string   = project.id
 output raiPolicyId string = raiPolicy.id
 output raiPolicyNameOut string = raiPolicyName
