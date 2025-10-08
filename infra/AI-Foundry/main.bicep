@@ -1,3 +1,6 @@
+@description('Azure resource group for all resources')
+param resourceGroupName string = 'School-Safe-GPT-RG-001'
+
 @description('Azure region for all resources')
 param location string = 'UKSouth'
 
@@ -26,17 +29,14 @@ param skuName string = 'S0'
 /* ------------------------------
    Azure AI Foundry (account)
 ---------------------------------*/
-resource aiAccount 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
-  name: aiFoundryName
-  location: location
-  kind: accountKind
-  sku: {
-    name: skuName
-  }
-  properties: {
-    // Set optional flags as needed.
-    // disableLocalAuth: true
-    publicNetworkAccess: 'Enabled' // or 'Disabled' if using Private Link
+module aiAccountModule './aiAccount.bicep' = {
+  name: 'aiAccountDeployment'
+  scope: resourceGroup(resourceGroupName)
+  params: {
+    aiFoundryName: aiFoundryName
+    location: location
+    accountKind: accountKind
+    skuName: skuName
   }
 }
 
@@ -44,7 +44,7 @@ resource aiAccount 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
    Foundry Project (child of account)
 ---------------------------------*/
 resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
-  name: '${aiAccount.name}/${aiProjectName}'
+  name: '${aiAccountModule.name}/${aiProjectName}'
   location: location
   properties: {
     displayName: aiProjectName
@@ -59,7 +59,7 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
    Mode: Blocking (enforce synchronous blocking)
 ---------------------------------*/
 resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2025-06-01' = {
-  name: '${aiAccount.name}/${raiPolicyName}'
+  name: '${aiAccountModule.name}/${raiPolicyName}'
   properties: {
     basePolicyName: raiPolicyName
     mode: 'Blocking' // or 'Asynchronous_filter' per org preference
@@ -169,7 +169,7 @@ resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2025-06-01'
 /* ------------------------------
    Outputs
 ---------------------------------*/
-output aiAccountId string = aiAccount.id
+output aiAccountId string = aiAccountModule.outputs.id
 output projectId string = project.id
 output raiPolicyId string = raiPolicy.id
 output raiPolicyNameOut string = raiPolicyName
