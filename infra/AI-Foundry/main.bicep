@@ -5,7 +5,7 @@ param aiFoundryName string
 param aiProjectName string
 param raiPolicyName string
 @description('Unique custom subdomain required before creating projects')
-param customSubDomainName string
+param customSubDomainName string = toLower(replace('${aiFoundryName}-${location}', '_', '-'))
 
 // 1) Parent account with SystemAssigned identity + required props
 resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
@@ -53,7 +53,7 @@ resource rai 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
   name: raiPolicyName
   parent: account
   properties: {
-    // basePolicyName: 'Microsoft.Default' // only if your region requires it
+    basePolicyName: 'Microsoft.Default' // only if your region requires it
     mode: 'Blocking'
     contentFilters: [
       { name: 'Hate',     severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
