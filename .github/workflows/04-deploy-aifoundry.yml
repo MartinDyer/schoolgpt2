@@ -58,7 +58,7 @@ jobs:
         id: deploy
         uses: azure/arm-deploy@v2
         with:
-          scope: resourceGroup
+          scope: resourcegroup
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: "School-Safe-GPT-RG-001"
           template: ${{ env.BICEP_FILE }}
