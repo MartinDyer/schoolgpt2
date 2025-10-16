@@ -42,7 +42,7 @@ resource rai 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
   name: raiPolicyName
   parent: account
   properties: {
-    basePolicyName: 'Default' // usually a known base; avoid echoing the custom name
+    //basePolicyName: 'Default' // usually a known base; avoid echoing the custom name
     mode: 'Blocking'
     contentFilters: [
       { name: 'Hate',     severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
