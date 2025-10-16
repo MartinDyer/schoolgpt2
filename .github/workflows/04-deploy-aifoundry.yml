@@ -46,12 +46,12 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      # - name: Deploy Resource Group via CLI
-      #   uses: azure/cli@v2
-      #   with:
-      #     azcliversion: latest
-      #     inlineScript: |
-      #           az group create --name School-Safe-GPT-RG-001 --location uksouth
+      - name: Deploy Resource Group via CLI
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+                az group create --name School-Safe-GPT-RG-002 --location uksouth
 
       - name: Validate (debug)
         run: |
