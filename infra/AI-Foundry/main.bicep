@@ -4,8 +4,6 @@ param location string
 param aiFoundryName string
 param aiProjectName string
 param raiPolicyName string
-@description('Optional: base policy name if your region requires one')
-param basePolicyName string = ''
 
 // 1) Parent account: AIServices + managed identity + project management
 resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
@@ -58,7 +56,7 @@ resource rai 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
   parent: account
   properties: {
     mode: 'Blocking'
-    if (!empty(basePolicyName)) basePolicyName: basePolicyName
+    basePolicyName: 'Microsoft.Default' // usually a known base; avoid echoing the custom name
     contentFilters: [
       { name: 'Hate',     severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
       { name: 'Hate',     severityThreshold: 'High', source: 'Completion', enabled: true, blocking: true }
