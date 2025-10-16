@@ -19,7 +19,7 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   properties: {
     publicNetworkAccess: 'Enabled'
     allowProjectManagement: true     // required for projects
-    customSubDomainName: customSubDomainName  // must be set before projects
+    //customSubDomainName: customSubDomainName  // must be set before projects
   }
 }
 
