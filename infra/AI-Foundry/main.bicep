@@ -46,7 +46,7 @@ resource aiAccount 'Microsoft.CognitiveServices/accounts@2024-10-01' existing = 
 }
 
 /* -------- Foundry Project (child of account) -------- */
-resource project 'Microsoft.CognitiveServices/accounts/projects@2024-10-01' = {
+resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
   name: aiProjectName
   location: location
   properties: {
