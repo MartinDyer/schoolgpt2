@@ -53,13 +53,13 @@ jobs:
       #     inlineScript: |
       #           az group create --name School-Safe-GPT-RG-001 --location uksouth
 
-      - name: Validate template (group)
+      - name: Validate (debug)
         run: |
           az deployment group validate \
             --resource-group School-Safe-GPT-RG-001 \
             --template-file ./infra/AI-Foundry/main.bicep \
             --parameters location=uksouth aiFoundryName=school-safe-gpt-AI-Foundry aiProjectName=school-safe-gpt-AI-Project raiPolicyName=school-safe-GPT-high-filter \
-            --output table
+            --output jsonc --verbose --debug
 
       - name: Deploy Bicep
         id: deploy
