@@ -5,7 +5,7 @@ param aiFoundryName string
 param aiProjectName string
 param raiPolicyName string
 @description('Unique custom subdomain required before creating projects')
-param customSubDomainName string = 'school-safe-gpt-AI-Foundry-002'
+param customSubDomainName string = 'school-safe-gpt-AI-Foundry-003'
 
 // 1) Parent account with SystemAssigned identity + required props
 resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {

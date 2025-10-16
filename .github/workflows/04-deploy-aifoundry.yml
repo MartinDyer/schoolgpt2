@@ -15,17 +15,17 @@ on:
       aiFoundryName:
         description: "Azure AI Foundry (Cognitive Services) account name"
         type: string
-        default: "school-safe-gpt-AI-Foundry-002"
+        default: "school-safe-gpt-AI-Foundry-003"
         required: true
       aiProjectName:
         description: "Foundry project name"
         type: string
         required: true
-        default: "school-safe-gpt-AI-Project-002"
+        default: "school-safe-gpt-AI-Project-003"
       raiPolicyName:
         description: "RAI policy name"
         type: string
-        default: "school-safe-GPT-high-filter-002"
+        default: "school-safe-GPT-high-filter-003"
         
 
 permissions:
@@ -51,12 +51,12 @@ jobs:
         with:
           azcliversion: latest
           inlineScript: |
-                az group create --name School-Safe-GPT-RG-002 --location uksouth
+                az group create --name School-Safe-GPT-RG-003 --location uksouth
 
       - name: Validate (debug)
         run: |
           az deployment group validate \
-            --resource-group School-Safe-GPT-RG-002 \
+            --resource-group School-Safe-GPT-RG-003 \
             --template-file ./infra/AI-Foundry/main.bicep \
             --parameters location=uksouth aiFoundryName=school-safe-gpt-AI-Foundry aiProjectName=school-safe-gpt-AI-Project raiPolicyName=school-safe-GPT-high-filter \
             --output jsonc --verbose --debug
@@ -67,7 +67,7 @@ jobs:
         with:
           scope: resourcegroup
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: "School-Safe-GPT-RG-002"
+          resourceGroupName: "School-Safe-GPT-RG-003"
           template: ${{ env.BICEP_FILE }}
           deploymentName: aifoundry-${{ github.run_number }}
           parameters: >
