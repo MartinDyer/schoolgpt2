@@ -12,14 +12,13 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: aiFoundryName
   location: location
   kind: 'AIServices'
-  identity: {                        // ✅ REQUIRED
-    type: 'SystemAssigned'
-  }
   sku: { name: 'S0' }
+  identity: { type: 'SystemAssigned' }
   properties: {
     publicNetworkAccess: 'Enabled'
-    allowProjectManagement: true     // required for projects
-    customSubDomainName: customSubDomainName  // must be set before projects
+    allowProjectManagement: true
+    // Write-once – only set during creation
+    customSubDomainName: customSubDomainName
   }
 }
 
