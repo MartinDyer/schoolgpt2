@@ -4,8 +4,20 @@ param aiProjectName string
 param raiPolicyName string
 
 // Do NOT redeclare the account for PUT; reference it as existing
-resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' existing = {
+resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: aiFoundryName
+  location: location
+  kind: 'AIServices'
+  sku: { name: 'S0' }
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    publicNetworkAccess: 'Enabled'
+    allowProjectManagement: true
+    // Only set this on first creation; omit on subsequent updates
+    // ...(empty(customSubDomainName) ? {} : { customSubDomainName: customSubDomainName })
+  }
 }
 
 // Role assignment (still fine)
