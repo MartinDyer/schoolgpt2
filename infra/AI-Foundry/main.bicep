@@ -1,29 +1,32 @@
 targetScope = 'resourceGroup'
 
+
 param location string
 param aiFoundryName string
 param aiProjectName string
 param raiPolicyName string
-@description('Unique custom subdomain required before creating projects')
-param customSubDomainName string = 'school-safe-gpt-AI-Foundry-003'
+@description('Unique subdomain. Only set on first creation.')
+param customSubDomainName string
 
-// 1) Parent account with SystemAssigned identity + required props
-resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
+// 1) Create the AI Foundry with SystemAssigned identity
+resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: aiFoundryName
   location: location
   kind: 'AIServices'
   sku: { name: 'S0' }
-  identity: { type: 'SystemAssigned' }
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     publicNetworkAccess: 'Enabled'
     allowProjectManagement: true
-    // Write-once – only set during creation
+    // NOTE: only include this on first-ever creation; do NOT change later
     customSubDomainName: customSubDomainName
   }
 }
 
-// 2) Give the account identity rights to the RG (Contributor is typical)
-resource rgContrib 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+// 2) (Optional but common) grant the Foundry’s identity Contributor on the RG
+resource rgContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(resourceGroup().id, aiFoundryName, 'rg-contrib')
   scope: resourceGroup()
   properties: {
@@ -31,28 +34,32 @@ resource rgContrib 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
       'Microsoft.Authorization/roleDefinitions',
       'b24988ac-6180-42a0-ab88-20f7382dd24c' // Contributor
     )
-    principalId: account.identity.principalId
+    principalId: aiFoundry.identity.principalId
     principalType: 'ServicePrincipal'
   }
+  dependsOn: [
+    aiFoundry
+  ]
 }
 
-// 3) Child: Project (will only run after account exists with identity)
+// 3) Create the Project (must depend on the account)
 resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
-  name: aiProjectName
-  parent: account
+  name: '${aiFoundryName}/${aiProjectName}'
   location: location
   properties: {
     displayName: aiProjectName
     description: 'Project provisioned via Bicep.'
   }
+  dependsOn: [
+    aiFoundry
+  ]
 }
 
-// 4) (Optional) RAI policy child
+// 4) (Optional) RAI policy under the account
 resource rai 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
-  name: raiPolicyName
-  parent: account
+  name: '${aiFoundryName}/${raiPolicyName}'
   properties: {
-    basePolicyName: 'Microsoft.Default' // only if your region requires it
+    basePolicyName: 'Microsoft.Default'
     mode: 'Blocking'
     contentFilters: [
       { name: 'Hate',     severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
@@ -65,4 +72,7 @@ resource rai 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
       { name: 'SelfHarm', severityThreshold: 'High', source: 'Completion', enabled: true, blocking: true }
     ]
   }
+  dependsOn: [
+    aiFoundry
+  ]
 }
