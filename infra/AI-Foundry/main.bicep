@@ -1,65 +1,48 @@
 targetScope = 'resourceGroup'
 
-@description('Azure resource group for all resources')
-param rg string = 'School-Safe-GPT-RG-001'
+@description('Region')
+param location string
 
-@description('Azure region for all resources')
-param location string = 'UKSouth'
+@description('Cognitive Services account (Azure AI Foundry) name')
+param aiFoundryName string
 
-@description('Name of the Azure AI Foundry (Cognitive Services) account')
-param aiFoundryName string = 'school-safe-gpt-AI-Foundry'
+@description('Project name')
+param aiProjectName string
 
-@description('Name of the Foundry project to create under the account')
-param aiProjectName string = 'school-safe-gpt-project'
+@description('RAI policy name')
+param raiPolicyName string
 
-@description('Name of the RAI/content filter policy to create')
-param raiPolicyName string = 'high-filter'
-
-@allowed([ 'AIServices' ])
-param accountKind string = 'AIServices'
-
-@allowed([ 'S0' ])
-param skuName string = 'S0'
-
-/* -------- Target resource group (create if needed) -------- */
-// resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-//   name: resourceGroupName
-//   location: location
-// }
-
-/* -------- Azure AI Foundry (account) -------- */
-module aiAccountModule './aiaccount.bicep' = {
-  name: 'aiAccountDeployment'
-  scope: resourceGroup(rg)
-  params: {
-    aiFoundryName: aiFoundryName
-    location: location
-    accountKind: accountKind
-    skuName: skuName
+// Parent account
+resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
+  name: aiFoundryName
+  location: location
+  kind: 'AIServices'
+  sku: {
+    name: 'S0'
+  }
+  properties: {
+    publicNetworkAccess: 'Enabled'
   }
 }
 
-/* -------- Reference the account as an existing parent -------- */
-resource aiAccount 'Microsoft.CognitiveServices/accounts@2024-10-01' existing = {
-  scope: resourceGroup(rg)
-  name: aiFoundryName
-}
-
-/* -------- Foundry Project (child of account) -------- */
+// Child: Project (note: parent + short name)
 resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
   name: aiProjectName
+  parent: account
+  // some child types inherit location; if required, keep it:
   location: location
   properties: {
     displayName: aiProjectName
-    description: 'Project provisioned via Bicep with high-severity content filtering policy available.'
+    description: 'Project provisioned via Bicep.'
   }
 }
 
-/* -------- RAI Policy (child of account) -------- */
-resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
+// Child: RAI policy
+resource rai 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
   name: raiPolicyName
+  parent: account
   properties: {
-    basePolicyName: raiPolicyName
+    basePolicyName: 'Default' // usually a known base; avoid echoing the custom name
     mode: 'Blocking'
     contentFilters: [
       { name: 'Hate',     severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
@@ -74,7 +57,6 @@ resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01'
   }
 }
 
-output aiAccountId string = aiAccount.id
-output projectId string   = project.id
-output raiPolicyId string = raiPolicy.id
-output raiPolicyNameOut string = raiPolicyName
+output aiAccountId string = account.id
+output projectId  string = project.id
+output raiPolicyId string = rai.id
