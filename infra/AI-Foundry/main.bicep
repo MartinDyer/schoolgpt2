@@ -28,7 +28,7 @@ param skuName string = 'S0'
 // }
 
 /* -------- Azure AI Foundry (account) -------- */
-module aiAccountModule './aiAccount.bicep' = {
+module aiAccountModule './aiaccount.bicep' = {
   name: 'aiAccountDeployment'
   scope: resourceGroup(rg)
   params: {
