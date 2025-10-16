@@ -22,6 +22,7 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   }
   properties: {
     publicNetworkAccess: 'Enabled'
+    allowProjectManagement: true   // ✅ required for accounts/projects
   }
 }
 
