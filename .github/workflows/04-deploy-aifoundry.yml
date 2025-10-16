@@ -15,17 +15,17 @@ on:
       aiFoundryName:
         description: "Azure AI Foundry (Cognitive Services) account name"
         type: string
-        default: "school-safe-gpt-AI-Foundry"
+        default: "school-safe-gpt-AI-Foundry-002"
         required: true
       aiProjectName:
         description: "Foundry project name"
         type: string
         required: true
-        default: "school-safe-gpt-AI-Project"
+        default: "school-safe-gpt-AI-Project-002"
       raiPolicyName:
         description: "RAI policy name"
         type: string
-        default: "school-safe-GPT-high-filter"
+        default: "school-safe-GPT-high-filter-002"
         
 
 permissions:
