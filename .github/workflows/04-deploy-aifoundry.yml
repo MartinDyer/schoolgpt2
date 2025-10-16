@@ -33,7 +33,7 @@ permissions:
   contents: read
 
 env:
-  BICEP_FILE: infra/AI-Foundry/main.bicep
+  BICEP_FILE: ./infra/AI-Foundry/main.bicep
 
 jobs:
   deploy:
@@ -60,7 +60,7 @@ jobs:
         with:
           scope: resourceGroup
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: ${{ github.event.inputs.resourceGroup }}
+          resourceGroupName: "School-Safe-GPT-RG-001"
           template: ${{ env.BICEP_FILE }}
           deploymentName: aifoundry-${{ github.run_number }}
           parameters: >
