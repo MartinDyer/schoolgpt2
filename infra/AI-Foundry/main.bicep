@@ -4,6 +4,8 @@ param location string
 param aiFoundryName string
 param aiProjectName string
 param raiPolicyName string
+@description('Globally unique subdomain (lowercase letters, numbers, hyphens). Cannot be changed later.')
+param customSubDomainName string = toLower(replace(aiFoundryName, '_', '-'))
 
 // 1) Parent account: AIServices + managed identity + project management
 resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
@@ -19,6 +21,7 @@ resource account 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   properties: {
     publicNetworkAccess: 'Enabled'
     allowProjectManagement: true     // ✅ REQUIRED to create projects
+    customSubDomainName: customSubDomainName     // ✅ REQUIRED
   }
 }
 
