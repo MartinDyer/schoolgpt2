@@ -34,6 +34,7 @@ resource rai 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = {
   name: raiPolicyName
   parent: account
   properties: {
+    basePolicyName: 'Microsoft.Default' // only if your region requires it
     mode: 'Blocking'
     contentFilters: [
       { name: 'Hate',     severityThreshold: 'High', source: 'Prompt',     enabled: true, blocking: true }
