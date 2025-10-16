@@ -56,7 +56,7 @@ jobs:
       - name: Validate (debug)
         run: |
           az deployment group validate \
-            --resource-group School-Safe-GPT-RG-001 \
+            --resource-group School-Safe-GPT-RG-002 \
             --template-file ./infra/AI-Foundry/main.bicep \
             --parameters location=uksouth aiFoundryName=school-safe-gpt-AI-Foundry aiProjectName=school-safe-gpt-AI-Project raiPolicyName=school-safe-GPT-high-filter \
             --output jsonc --verbose --debug
@@ -67,7 +67,7 @@ jobs:
         with:
           scope: resourcegroup
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: "School-Safe-GPT-RG-001"
+          resourceGroupName: "School-Safe-GPT-RG-002"
           template: ${{ env.BICEP_FILE }}
           deploymentName: aifoundry-${{ github.run_number }}
           parameters: >
