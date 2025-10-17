@@ -111,7 +111,7 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd infra
+          cd infra/AI-Foundry
           echo "🔄 Initializing Terraform with Azure backend..."
           terraform init \
             -backend-config="resource_group_name=${{ steps.backend-config.outputs.resource_group_backend }}" \
@@ -121,7 +121,7 @@ jobs:
 
       - name: Terraform Validate
         run: |
-          cd infra
+          cd infra/AI-Foundry
           echo "✅ Validating Terraform configuration..."
           terraform validate
 
