@@ -1,3 +1,8 @@
+# Setup providers
+provider "azurerm" {
+  features {}
+  storage_use_azuread = true
+}
 ## Create a random string
 ## 
 resource "random_string" "unique" {
