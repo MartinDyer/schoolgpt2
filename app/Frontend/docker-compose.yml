@@ -1,0 +1,18 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: schoolsafeai-frontend
+    ports:
+      - "3001:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - schoolsafeai-network
+
+networks:
+  schoolsafeai-network:
+    driver: bridge
+

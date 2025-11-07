@@ -25,7 +25,7 @@ on:
     branches:
       - main
     paths:
-      - 'app/**'
+      - 'sample-app-aoai-chatGPT/**'
       - '.github/workflows/03-deploy-application.yml'
 
 permissions:
@@ -55,91 +55,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set Terraform Azure credentials
-        run: |
-          echo "ARM_CLIENT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" >> $GITHUB_ENV
-          echo "ARM_CLIENT_SECRET=${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" >> $GITHUB_ENV
-          echo "ARM_SUBSCRIPTION_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}" >> $GITHUB_ENV
-          echo "ARM_TENANT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}" >> $GITHUB_ENV
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.7.5
-          terraform_wrapper: false
-
-      - name: 🔧 Read Backend Configuration
-        id: backend-config
-        run: |
-          echo "🔍 Reading backend configuration from backend.tf..."
-          cd infra
-          
-          if [ ! -f "backend.tf" ]; then
-            echo "❌ Backend configuration not found!"
-            echo "Please run the 'Setup SchoolGPT Backend Storage' workflow first."
-            exit 1
-          fi
-          
-          # Extract backend configuration from backend.tf
-          RESOURCE_GROUP_BACKEND=$(grep -o 'resource_group_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
-          STORAGE_ACCOUNT=$(grep -o 'storage_account_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
-          CONTAINER_NAME=$(grep -o 'container_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
-          
-          echo "✅ Backend configuration found:"
-          echo "  Resource Group: $RESOURCE_GROUP_BACKEND"
-          echo "  Storage Account: $STORAGE_ACCOUNT"
-          echo "  Container: $CONTAINER_NAME"
-          
-          # Set outputs for next steps
-          echo "resource_group_backend=$RESOURCE_GROUP_BACKEND" >> $GITHUB_OUTPUT
-          echo "storage_account=$STORAGE_ACCOUNT" >> $GITHUB_OUTPUT
-          echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
-
-      - name: 🔍 Get Infrastructure Information
-        id: get-infra
-        run: |
-          # Get infrastructure details from Terraform state
-          cd infra
-          
-          # Initialize Terraform to access remote state
-          terraform init \
-            -backend-config="resource_group_name=${{ steps.backend-config.outputs.resource_group_backend }}" \
-            -backend-config="storage_account_name=${{ steps.backend-config.outputs.storage_account }}" \
-            -backend-config="container_name=${{ steps.backend-config.outputs.container_name }}" \
-            -backend-config="key=${{ github.event.inputs.environment || 'production' }}.terraform.tfstate"
-          
-          # Get outputs from Terraform
-          ACR_NAME=$(terraform output -raw container_registry_name 2>/dev/null || echo "")
-          WEB_APP_NAME=$(terraform output -raw web_app_name 2>/dev/null || echo "")
-          RESOURCE_GROUP=$(terraform output -raw resource_group_name 2>/dev/null || echo "")
-          KEY_VAULT_NAME=$(terraform output -raw key_vault_name 2>/dev/null || echo "")
-          SQL_CONNECTION_STRING=$(terraform output -raw sql_connection_string 2>/dev/null || echo "")
-          AI_FOUNDRY_ENDPOINT=$(terraform output -raw ai_foundry_endpoint 2>/dev/null || echo "")
-          AI_FOUNDRY_API_KEY=$(terraform output -raw ai_foundry_api_key 2>/dev/null || echo "")
-          
-          if [ -z "$ACR_NAME" ] || [ -z "$WEB_APP_NAME" ] || [ -z "$RESOURCE_GROUP" ]; then
-            echo "❌ Could not get infrastructure information from Terraform state"
-            echo "Please ensure the infrastructure is deployed first"
-            exit 1
-          fi
-          
-          echo "✅ Found infrastructure:"
-          echo "  ACR: $ACR_NAME"
-          echo "  Web App: $WEB_APP_NAME"
-          echo "  Resource Group: $RESOURCE_GROUP"
-          echo "  Key Vault: $KEY_VAULT_NAME"
-          echo "  SQL: Configured"
-          echo "  AI Foundry: Configured"
-          
-          # Set outputs for next steps
-          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
-          echo "web_app_name=$WEB_APP_NAME" >> $GITHUB_OUTPUT
-          echo "resource_group=$RESOURCE_GROUP" >> $GITHUB_OUTPUT
-          echo "key_vault_name=$KEY_VAULT_NAME" >> $GITHUB_OUTPUT
-          echo "sql_connection_string=$SQL_CONNECTION_STRING" >> $GITHUB_OUTPUT
-          echo "ai_foundry_endpoint=$AI_FOUNDRY_ENDPOINT" >> $GITHUB_OUTPUT
-          echo "ai_foundry_api_key=$AI_FOUNDRY_API_KEY" >> $GITHUB_OUTPUT
-
+      
       - name: 🔑 Get ACR Credentials from Key Vault
         id: get-credentials
         run: |
@@ -188,7 +104,7 @@ jobs:
         if: steps.check-rebuild.outputs.rebuild == 'true'
         run: |
           echo "🏗️ Building Docker image for SchoolGPT..."
-          cd app/frontend
+          cd sample-app-aoai-chatGPT
           
           docker build \
             -f WebApp.Dockerfile \
@@ -218,34 +134,6 @@ jobs:
             --name ${{ steps.get-infra.outputs.web_app_name }} \
             --resource-group ${{ steps.get-infra.outputs.resource_group }} \
             --settings DOCKER_CUSTOM_IMAGE_NAME="${{ steps.get-infra.outputs.acr_name }}.azurecr.io/schoolgpt-app:${{ steps.check-rebuild.outputs.image_tag }}"
-
-      - name: 🔧 Configure SQL and AI Foundry Settings
-        run: |
-          echo "🔧 Configuring SQL and AI Foundry settings..."
-          
-          # Configure SQL and AI Foundry settings
-          az webapp config appsettings set \
-            --name ${{ steps.get-infra.outputs.web_app_name }} \
-            --resource-group ${{ steps.get-infra.outputs.resource_group }} \
-            --settings \
-            SQL_CONNECTION_STRING="${{ steps.get-infra.outputs.sql_connection_string }}" \
-            AI_FOUNDRY_ENDPOINT="${{ steps.get-infra.outputs.ai_foundry_endpoint }}" \
-            AI_FOUNDRY_KEY="${{ steps.get-infra.outputs.ai_foundry_api_key }}" \
-            AI_FOUNDRY_MODEL="gpt-35-turbo" \
-            AI_FOUNDRY_TEMPERATURE="0.1" \
-            AI_FOUNDRY_MAX_TOKENS="800" \
-            AUTH_ENABLED="true" \
-            ENTRA_ID_ENABLED="true" \
-            CHAT_HISTORY_ENABLED="true" \
-            ENVIRONMENT="SCHOOL_SAFE" \
-            TARGET_AUDIENCE="STUDENTS_UNDER_16" \
-            CONTENT_MODERATION="HIGH" \
-            UI_TITLE="SchoolGPT AI Assistant" \
-            UI_CHAT_TITLE="School AI Assistant" \
-            UI_CHAT_DESCRIPTION="Ask me questions about your studies! I'm here to help with educational content." \
-            UI_SHOW_SHARE_BUTTON="false"
-          
-          echo "✅ SQL and AI Foundry settings configured successfully!"
 
       - name: 🔄 Restart Web App
         run: |

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: schoolsafeai-backend
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      # Server Configuration
+      - PORT=8080
+      - NODE_ENV=production
+      
+      # Azure OpenAI Configuration
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2025-01-01-preview}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      
+      # Azure SQL Configuration
+      - AZURE_SQL_USER=${AZURE_SQL_USER}
+      - AZURE_SQL_PASS=${AZURE_SQL_PASS}
+      - AZURE_SQL_SERVER=${AZURE_SQL_SERVER}
+      - AZURE_SQL_DB=${AZURE_SQL_DB}
+    
+    env_file:
+      - .env
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    
+    networks:
+      - schoolsafeai-network
+
+networks:
+  schoolsafeai-network:
+    driver: bridge
+
