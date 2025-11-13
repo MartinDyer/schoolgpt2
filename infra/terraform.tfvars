@@ -16,7 +16,7 @@ azure_openai_model                 = "gpt-4o" # Options: gpt-35-turbo, gpt-4, gp
 azure_openai_model_version         = "2024-11-20"
 azure_openai_model_deployment_name = "school-safe-gpt"
 model_sku_name                     = "Standard"
-model_capacity                     = 80 # Tokens per minute (reduced to fit quota)
+model_capacity                     = 50 # Tokens per minute (reduced to fit quota)
 
 # SQL Database Configuration (Auto-generated unique names)
 sql_server_name       = "blundellsqlsrv8fdc"
