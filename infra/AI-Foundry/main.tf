@@ -19,6 +19,11 @@ resource "random_string" "unique" {
 resource "azurerm_resource_group" "rg" {
   name     = "rg-aifoundry-School-Safe-GPT"
   location = var.location
+
+lifecycle {
+    prevent_destroy = true
+  }
+  
 }
 
 ## Create an AI Foundry resource
@@ -43,6 +48,11 @@ resource "azurerm_cognitive_account" "ai_foundry" {
   tags = {
     Acceptance = "Test"
   }
+
+lifecycle {
+    prevent_destroy = true
+  }
+
 }
 
 ## Create a deployment for OpenAI's GPT-4o in the AI Foundry resource
@@ -65,4 +75,9 @@ resource "azurerm_cognitive_deployment" "aifoundry_deployment_gpt_4o" {
     name    = "gpt-4o"
     version = "2024-11-20"
   }
+
+lifecycle {
+    prevent_destroy = true
+  }
+
 }
