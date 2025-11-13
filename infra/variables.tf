@@ -153,18 +153,7 @@ variable "web_app_name" {
   }
 }
 
-# Docker Configuration
-variable "docker_image" {
-  description = "Docker image name (without registry, e.g., schoolgpt-app). (Default: schoolgpt-app)"
-  type        = string
-  default     = "schoolgpt-app"
-}
 
-variable "docker_tag" {
-  description = "Docker image tag (e.g., latest). (Default: latest)"
-  type        = string
-  default     = "latest"
-}
 
 # Application Insights Configuration
 variable "app_insights_name" {
@@ -234,3 +223,16 @@ variable "sql_azuread_admin_object_id" {
   type        = string
   default     = null
 } 
+
+
+variable "frontend_app_name" {
+  description = "Frontend web app name (must be globally unique)"
+  type        = string
+  default     = "my-frontend-app-1234"
+}
+
+variable "backend_app_name" {
+  description = "Backend web app name (must be globally unique)"
+  type        = string
+  default     = "my-backend-app-1234"
+}

@@ -1,4 +1,4 @@
-name: 🚀 Deploy SchoolGPT Infrastructure
+name: 🚀 02 - Deploy SchoolGPT Infrastructure
 
 on:
   workflow_dispatch:

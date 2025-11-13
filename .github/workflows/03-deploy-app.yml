@@ -1,0 +1,88 @@
+name: 03- Deploy React & Node to Azure App Service
+
+on:
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "18.x"
+  # Azure App Service names
+  AZURE_WEBAPP_FRONTEND_NAME: your-frontend-app-name
+  AZURE_WEBAPP_BACKEND_NAME: your-backend-app-name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------
+      # Frontend: Build React
+      # -----------------------
+      - name: Use Node.js for frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: .app/frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: .app/frontend
+        run: npm run build
+
+      # If your frontend App Service expects a Node app that serves the built files,
+      # you might zip the whole app folder (including server code) instead.
+      # Here we deploy just the build output as a simple site.
+      - name: Archive frontend build
+        run: |
+          cd 
+          zip -r ../../frontend_build.zip .
+
+      # -----------------------
+      # Backend: Build Node API
+      # -----------------------
+      - name: Use Node.js for backend
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: ./app/backend
+        run: npm ci
+
+      # Optional: run tests
+      - name: Test backend
+        working-directory: ./backend
+        run: npm test --if-present
+
+      - name: Archive backend app
+        run: |
+          cd backend
+          zip -r ../backend_build.zip .
+
+      # -----------------------
+      # Deploy Frontend to Azure
+      # -----------------------
+      - name: Deploy frontend to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "School-Safe-GPT-Frontend"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_FRONTEND_PUBLISH_PROFILE }}
+          package: frontend_build.zip
+
+      # -----------------------
+      # Deploy Backend to Azure
+      # -----------------------
+      - name: Deploy backend to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "School-Safe-GPT-Backend"
+          publish-profile: ${{ secrets.AZURE_WEBAPP_BACKEND_PUBLISH_PROFILE }}
+          package: backend_build.zip

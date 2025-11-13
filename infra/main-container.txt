@@ -14,7 +14,7 @@ resource "azurerm_resource_group" "main" {
   location = var.location
 
   tags = {
-    Environment = "School-Safe-GPT"
+    Environment = "School-Safe-AI"
     Project     = "SchoolGPT"
     Purpose     = "Educational AI Platform"
   }
@@ -38,7 +38,7 @@ resource "azurerm_cognitive_account" "ai_foundry" {
   }
 
   tags = {
-    Environment    = "School-Safe-GPT"
+    Environment    = "School-Safe-AI"
     Purpose        = "AI Foundry for Education"
     ContentFilter  = "High"
     TargetAudience = "Students Under 16"
@@ -66,10 +66,22 @@ resource "azurerm_cognitive_deployment" "gpt_model" {
 }
 
 ###########################################
-## App Service
+# Container Registry and App Service
 ###########################################
 
+# Azure Container Registry
+resource "azurerm_container_registry" "acr" {
+  name                = var.acr_name
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = "Standard"
+  admin_enabled       = true
 
+  tags = {
+    Environment = "School-Safe-AI"
+    Purpose     = "Docker Images"
+  }
+}
 
 # Azure Service Plan
 resource "azurerm_service_plan" "main" {
@@ -80,47 +92,37 @@ resource "azurerm_service_plan" "main" {
   sku_name            = var.app_service_sku
 
   tags = {
-    Environment = "School-Safe-GPT"
+    Environment = "School-Safe-AI"
     Purpose     = "App Hosting"
   }
 }
 
-#####################
-# Backend Web App
-#####################
-
-resource "azurerm_linux_web_app" "backend" {
-  name                = var.backend_app_name
+# Azure Web App with Simplified Configuration
+resource "azurerm_linux_web_app" "main" {
+  name                = var.web_app_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   service_plan_id     = azurerm_service_plan.main.id
 
-  https_only = true
-
   site_config {
-    # Node runtime for backend API
+    always_on  = true
+    ftps_state = "Disabled"
     application_stack {
-      node_version = "18-lts"
-    }
-
-    # Allow requests from the frontend app via CORS
-    cors {
-      allowed_origins = [
-        "https://${azurerm_linux_web_app.frontend.default_hostname}"
-      ]
-      support_credentials = false
+      docker_image_name        = "${var.docker_image}:${var.docker_tag}"
+      docker_registry_url      = "https://${azurerm_container_registry.acr.login_server}"
+      docker_registry_username = azurerm_container_registry.acr.admin_username
+      docker_registry_password = azurerm_container_registry.acr.admin_password
     }
   }
 
   app_settings = {
-    # Example: typical Node/Express entry point
-    "WEBSITE_RUN_FROM_PACKAGE" = "1"
-    # Add any backend-specific settings here
-    "NODE_ENV"                 = "production"
-
     # Basic Configuration
     "WEBSITES_PORT"                       = "80"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
+
+    # Docker Configuration
+    "DOCKER_ENABLE_CI"         = "true"
+    "DOCKER_CUSTOM_IMAGE_NAME" = "${var.acr_login_server}/${var.docker_image}:${var.docker_tag}"
 
     # Azure AI Foundry Configuration - School Safe Settings
     "AI_FOUNDRY_ENDPOINT"          = azurerm_cognitive_account.ai_foundry.endpoint
@@ -134,6 +136,12 @@ resource "azurerm_linux_web_app" "backend" {
 
     # School-Safe System Message with Enhanced Prompt Engineering
     "AI_FOUNDRY_SYSTEM_MESSAGE" = var.school_safe_system_message
+
+    # Content Filter Settings (High Level for School Safety)
+    "AI_FOUNDRY_CONTENT_FILTER_HATE"      = "2" # High filtering
+    "AI_FOUNDRY_CONTENT_FILTER_SEXUAL"    = "2" # High filtering  
+    "AI_FOUNDRY_CONTENT_FILTER_VIOLENCE"  = "2" # High filtering
+    "AI_FOUNDRY_CONTENT_FILTER_SELF_HARM" = "2" # High filtering
 
     # Application Insights for Monitoring
     "APPINSIGHTS_INSTRUMENTATIONKEY"        = azurerm_application_insights.main.instrumentation_key
@@ -169,114 +177,11 @@ resource "azurerm_linux_web_app" "backend" {
   }
 
   tags = {
-    Environment    = "School-Safe-GPT"
+    Environment    = "School-Safe-AI"
     Purpose        = "AI Chat Application"
     TargetAudience = "Students Under 16"
   }
 }
-
-
-
-#####################
-# Frontend Web App
-#####################
-
-resource "azurerm_linux_web_app" "frontend" {
-  name                = var.frontend_app_name
-  resource_group_name = azurerm_resource_group.this.name
-  location            = azurerm_resource_group.this.location
-  service_plan_id     = azurerm_service_plan.this.id
-
-  https_only = true
-
-  site_config {
-    # Node runtime (if you serve the React build via Node)
-    # If you're using something else (e.g. .NET), adjust this.
-    application_stack {
-      node_version = "18-lts"
-    }
-  }
-
-  app_settings = {
-    "WEBSITE_RUN_FROM_PACKAGE" = "1"
-    "NODE_ENV"                 = "production"
-
-    # 🔗 Link frontend → backend:
-    # The frontend can read this env var and call the backend.
-    "API_BASE_URL" = "https://${azurerm_linux_web_app.backend.default_hostname}"
-     
-    # Basic Configuration
-    "WEBSITES_PORT"                       = "80"
-    "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
-
-    # Azure AI Foundry Configuration - School Safe Settings
-    "AI_FOUNDRY_ENDPOINT"          = azurerm_cognitive_account.ai_foundry.endpoint
-    "AI_FOUNDRY_KEY"               = azurerm_cognitive_account.ai_foundry.primary_access_key
-    "AI_FOUNDRY_MODEL"             = azurerm_cognitive_deployment.gpt_model.name
-    "AI_FOUNDRY_TEMPERATURE"       = "0.1" # Low temperature for consistent, safe responses
-    "AI_FOUNDRY_TOP_P"             = "0.9"
-    "AI_FOUNDRY_MAX_TOKENS"        = "800" # Controlled response length
-    "AI_FOUNDRY_FREQUENCY_PENALTY" = "0.5"
-    "AI_FOUNDRY_PRESENCE_PENALTY"  = "0.0"
-
-    # School-Safe System Message with Enhanced Prompt Engineering
-    "AI_FOUNDRY_SYSTEM_MESSAGE" = var.school_safe_system_message
-
-    # Application Insights for Monitoring
-    "APPINSIGHTS_INSTRUMENTATIONKEY"        = azurerm_application_insights.main.instrumentation_key
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
-
-    # Authentication and Security (Required for School Access)
-    "AUTH_ENABLED"     = "true"
-    "ENTRA_ID_ENABLED" = "true"
-
-    # School-Specific Settings
-    "ENVIRONMENT"          = "SCHOOL_SAFE"
-    "TARGET_AUDIENCE"      = "STUDENTS_UNDER_16"
-    "CONTENT_MODERATION"   = "HIGH"
-    "CHAT_HISTORY_ENABLED" = "true"
-
-    # UI Customization for Schools
-    "UI_TITLE"             = var.school_name
-    "UI_CHAT_TITLE"        = "School AI Assistant"
-    "UI_CHAT_DESCRIPTION"  = "Ask me questions about your studies! I'm here to help with educational content."
-    "UI_SHOW_SHARE_BUTTON" = "false" # Disabled for school safety
-
-    # Feature Flags
-    "ENABLE_CONTENT_FILTER_LOGGING" = "true"
-    "ENABLE_CHAT_HISTORY"           = "true"
-
-    # SQL Connection String
-    "SQL_CONNECTION_STRING" = local.sql_connection_string
-  }
-
-  # Enable managed identity for secure access
-  identity {
-    type = "SystemAssigned"
-  }
-
-  tags = {
-    Environment    = "School-Safe-GPT"
-    Purpose        = "AI Chat Application"
-    TargetAudience = "Students Under 16"
-  }
-}
-  
-
-#####################
-# Outputs
-#####################
-
-output "frontend_url" {
-  description = "Public URL of the frontend app"
-  value       = "https://${azurerm_linux_web_app.frontend.default_hostname}"
-}
-
-output "backend_url" {
-  description = "Public URL of the backend app"
-  value       = "https://${azurerm_linux_web_app.backend.default_hostname}"
-}
-
 
 
 ###########################################
@@ -292,7 +197,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   retention_in_days   = 90
 
   tags = {
-    Environment = "School-Safe-GPT"
+    Environment = "School-Safe-AI"
     Purpose     = "Centralized Logging"
   }
 }
@@ -307,11 +212,27 @@ resource "azurerm_application_insights" "main" {
   retention_in_days   = 90
 
   tags = {
-    Environment = "School-Safe-GPT"
+    Environment = "School-Safe-AI"
     Purpose     = "Application Monitoring"
   }
 }
 
+# Action Group for Alerts
+resource "azurerm_monitor_action_group" "school_alerts" {
+  name                = "school-ai-alerts"
+  resource_group_name = azurerm_resource_group.main.name
+  short_name          = "SchoolAI"
+
+  email_receiver {
+    name          = "School IT Admin"
+    email_address = var.alert_email
+  }
+
+  tags = {
+    Environment = "School-Safe-AI"
+    Purpose     = "Alert Notifications"
+  }
+}
 
 ###########################################
 # Azure Key Vault - Enhanced Security
@@ -345,7 +266,7 @@ resource "azurerm_key_vault" "main" {
   }
 
   tags = {
-    Environment = "School-Safe-GPT"
+    Environment = "School-Safe-AI"
     Purpose     = "Secure Configuration Storage"
   }
 }
@@ -408,7 +329,7 @@ resource "azurerm_mssql_server" "main" {
   administrator_login_password = local.effective_sql_password
 
   tags = {
-    Environment = "School-Safe-GPT"
+    Environment = "School-Safe-AI"
     Purpose     = "SQL Server"
   }
 }
@@ -426,7 +347,7 @@ resource "azurerm_mssql_database" "main" {
   auto_pause_delay_in_minutes = -1
 
   tags = {
-    Environment = "School-Safe-GPT"
+    Environment = "School-Safe-AI"
     Purpose     = "Application Database"
   }
 }
@@ -507,7 +428,9 @@ output "next_steps" {
 }
 
 # Additional outputs for CI/CD workflows
-
+output "container_registry_name" {
+  value = azurerm_container_registry.acr.name
+}
 
 output "web_app_name" {
   value = azurerm_linux_web_app.main.name
@@ -527,6 +450,14 @@ output "ai_foundry_api_key" {
   sensitive = true
 }
 
+
+output "container_registry_credentials" {
+  value = {
+    username = azurerm_container_registry.acr.admin_username
+    password = azurerm_container_registry.acr.admin_password
+  }
+  sensitive = true
+}
 
 # Output for SQL connection string (sensitive)
 output "sql_connection_string" {

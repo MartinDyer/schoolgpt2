@@ -1,4 +1,4 @@
-name: 🔧 Setup SchoolGPT Backend Storage
+name: 🔧 01 - Setup SchoolGPT Backend Storage
 
 on:
   workflow_dispatch:
