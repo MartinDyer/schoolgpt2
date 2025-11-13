@@ -105,9 +105,9 @@ resource "azurerm_linux_web_app" "backend" {
 
     # Allow requests from the frontend app via CORS
     cors {
-      allowed_origins = [
-        "https://${azurerm_linux_web_app.frontend.default_hostname}"
-      ]
+      # allowed_origins = [
+      #   "https://${azurerm_linux_web_app.frontend.default_hostname}"
+      # ]
       support_credentials = false
     }
   }
