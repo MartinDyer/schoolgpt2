@@ -19,7 +19,7 @@ model_sku_name                     = "Standard"
 model_capacity                     = 80 # Tokens per minute (reduced to fit quota)
 
 # SQL Database Configuration (Auto-generated unique names)
-sql_server_name       = "blundellsqlsrv4b9f"
+sql_server_name       = "luketestsqlsrvcc88"
 sql_admin                   = "sqladminuser"
 sql_password                = "MyStrongP@ssw0rd123!" # REPLACE: Use a secure password
 sql_db_name                 = "schoolgptdb"
@@ -31,7 +31,7 @@ sql_azuread_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb" # REPLACE_W
 app_insights_name = "schoolgpt-ai"
 
 # Azure Key Vault (Auto-generated unique names)
-key_vault_name            = "blundellkv4b9f"
+key_vault_name            = "luketestkvcc88"
 key_vault_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb" # REPLACE_WITH_YOUR_OBJECT_ID
 
 # Content filtering is managed through Azure AI Foundry portal
