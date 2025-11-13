@@ -34,6 +34,10 @@ variable "school_name" {
   default     = "School AI Assistant"
 }
 
+variable "alert_email" {
+  description = "Email address for receiving alerts about content filter violations and system issues. (Required)"
+  type        = string
+}
 
 # Azure AI Foundry Configuration
 variable "ai_foundry_name" {
@@ -100,6 +104,22 @@ variable "school_safe_system_message" {
   default     = "You are a helpful, safe, and educational AI assistant designed specifically for students under the age of 16. Your role is to:\n\n1. Provide accurate, age-appropriate educational content\n2. Encourage learning, critical thinking, and curiosity\n3. Maintain a supportive and positive tone\n4. Refuse to discuss or provide information about inappropriate topics including violence, explicit content, harmful activities, or anything not suitable for minors\n5. Guide students toward reliable educational resources\n6. Promote digital citizenship and online safety\n7. Encourage students to verify information with teachers and trusted sources\n\nWhen responding:\n- Use clear, simple language appropriate for the student's age\n- Provide educational value in every response\n- Encourage further learning and exploration of appropriate topics\n- If asked about inappropriate content, politely redirect to educational alternatives\n- Always prioritize the student's safety, well-being, and educational development\n\nRemember: The user is under 16 years old and requires high-integrity, safe, and educational responses."
 }
 
+# Container Registry Configuration  
+variable "acr_name" {
+  description = "Azure Container Registry name (must be globally unique, 5-50 lowercase letters/numbers). (Required)"
+  type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9]{5,50}$", var.acr_name))
+    error_message = "ACR name must be 5-50 characters, lowercase letters and numbers only."
+  }
+}
+
+variable "acr_login_server" {
+  description = "Login server for the Azure Container Registry (e.g., myacr.azurecr.io). (Auto-derived, can be left blank)"
+  type        = string
+  default     = ""
+}
 
 # App Service Configuration
 variable "app_service_plan_name" {
@@ -120,6 +140,16 @@ variable "app_service_sku" {
       "P1v2", "P2v2", "P3v2"
     ], var.app_service_sku)
     error_message = "App Service SKU must be one of: B1, B2, B3, S1, S2, S3, P1v2, P2v2, P3v2"
+  }
+}
+
+variable "web_app_name" {
+  description = "Name for the Azure Web App (must be globally unique). (Required)"
+  type        = string
+
+  validation {
+    condition     = length(var.web_app_name) >= 2 && length(var.web_app_name) <= 60
+    error_message = "Web app name must be between 2 and 60 characters."
   }
 }
 
@@ -198,11 +228,11 @@ variable "sql_azuread_admin_object_id" {
 variable "frontend_app_name" {
   description = "Frontend web app name (must be globally unique)"
   type        = string
-  default     = "School-Safe-GPT-FE-1234"
+  default     = "my-frontend-app-1234"
 }
 
 variable "backend_app_name" {
   description = "Backend web app name (must be globally unique)"
   type        = string
-  default     = "School-Safe-GPT-BE-1234"
+  default     = "my-backend-app-1234"
 }
