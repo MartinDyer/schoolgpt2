@@ -352,27 +352,6 @@ resource "azurerm_key_vault" "main" {
 # Current client for access policy
 data "azurerm_client_config" "current" {}
 
-# Store ACR credentials in Key Vault
-resource "azurerm_key_vault_secret" "acr_username" {
-  name         = "acr-username"
-  value        = azurerm_container_registry.acr.admin_username
-  key_vault_id = azurerm_key_vault.main.id
-
-  tags = {
-    Purpose = "Container Registry Access"
-  }
-}
-
-resource "azurerm_key_vault_secret" "acr_password" {
-  name         = "acr-password"
-  value        = azurerm_container_registry.acr.admin_password
-  key_vault_id = azurerm_key_vault.main.id
-
-  tags = {
-    Purpose = "Container Registry Access"
-  }
-}
-
 
 ###########################################
 # Azure SQL for Audit Logging / App Data
@@ -473,10 +452,9 @@ resource "null_resource" "key_vault_cleanup" {
 
 output "deployment_summary" {
   value = {
-    web_app_url           = "https://${azurerm_linux_web_app.main.default_hostname}"
+    web_app_url           = "https://${azurerm_linux_web_app.frontend.default_hostname}"
     ai_foundry_endpoint   = azurerm_cognitive_account.ai_foundry.endpoint
     ai_model_deployment   = azurerm_cognitive_deployment.gpt_model.name
-    container_registry    = azurerm_container_registry.acr.login_server
     application_insights  = azurerm_application_insights.main.name
     key_vault             = azurerm_key_vault.main.name
     resource_group        = azurerm_resource_group.main.name
@@ -509,7 +487,7 @@ output "next_steps" {
 
 
 output "web_app_name" {
-  value = azurerm_linux_web_app.main.name
+  value = azurerm_linux_web_app.frontend.name
 }
 
 output "resource_group_name" {
