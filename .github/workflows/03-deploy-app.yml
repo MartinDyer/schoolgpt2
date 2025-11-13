@@ -1,4 +1,4 @@
-name: 03- Deploy React & Node to Azure App Service
+name: 🚀 03- Deploy React & Node to Azure App Service
 
 on:
   workflow_dispatch:
