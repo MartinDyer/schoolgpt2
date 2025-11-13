@@ -1,4 +1,4 @@
-name: 🚀 02 - Deploy SchoolGPT Infrastructure
+name: 🚀 02 - Deploy AI Foundry
 
 on:
   workflow_dispatch:
@@ -50,6 +50,7 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
+
 
       - name: Azure Login
         uses: azure/login@v2
@@ -110,7 +111,7 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd infra
+          cd infra/AI-Foundry
           echo "🔄 Initializing Terraform with Azure backend..."
           terraform init \
             -backend-config="resource_group_name=${{ steps.backend-config.outputs.resource_group_backend }}" \
@@ -120,14 +121,14 @@ jobs:
 
       - name: Terraform Validate
         run: |
-          cd infra
+          cd infra/AI-Foundry
           echo "✅ Validating Terraform configuration..."
           terraform validate
 
       - name: Terraform Plan
         id: plan
         run: |
-          cd infra
+          cd infra/AI-Foundry
           echo "📋 Creating Terraform plan..."
           terraform plan \
             -var-file=terraform.tfvars \
@@ -190,7 +191,7 @@ jobs:
       - name: Terraform Apply
         if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
         run: |
-          cd infra
+          cd infra/AI-Foundry
           echo "🚀 Applying Terraform configuration..."
           terraform apply tfplan
 

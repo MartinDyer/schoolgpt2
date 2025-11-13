@@ -35,72 +35,6 @@ variable "school_name" {
 }
 
 
-# Azure AI Foundry Configuration
-variable "ai_foundry_name" {
-  description = "Name for the Azure AI Foundry (OpenAI) resource (must be globally unique, 3-24 lowercase letters/numbers). (Required)"
-  type        = string
-}
-
-variable "ai_foundry_subdomain" {
-  description = "Custom subdomain for the AI Foundry endpoint (must be globally unique, 3-24 lowercase letters/numbers). (Required)"
-  type        = string
-}
-
-variable "azure_openai_model" {
-  description = "Azure OpenAI model name for AI Foundry (e.g., gpt-35-turbo, gpt-4, gpt-4o). (Default: gpt-35-turbo)"
-  type        = string
-  default     = "gpt-35-turbo"
-
-  validation {
-    condition = contains([
-      "gpt-35-turbo",
-      "gpt-35-turbo-16k",
-      "gpt-4",
-      "gpt-4-32k",
-      "gpt-4o",
-      "gpt-4-turbo"
-    ], var.azure_openai_model)
-    error_message = "Model must be one of: gpt-35-turbo, gpt-35-turbo-16k, gpt-4, gpt-4-32k, gpt-4o, gpt-4-turbo"
-  }
-}
-
-variable "azure_openai_model_version" {
-  description = "Version of the Azure OpenAI model. (Default: 0613 for GPT-3.5-turbo)"
-  type        = string
-  default     = "0613"
-}
-
-variable "azure_openai_model_deployment_name" {
-  description = "Name for the model deployment in AI Foundry. (Default: school-safe-chat)"
-  type        = string
-  default     = "school-safe-chat"
-}
-
-variable "model_sku_name" {
-  description = "SKU name for the model deployment (Standard for most use cases). (Default: Standard)"
-  type        = string
-  default     = "Standard"
-}
-
-variable "model_capacity" {
-  description = "Capacity for the model deployment (tokens per minute). (Default: 120)"
-  type        = number
-  default     = 120
-
-  validation {
-    condition     = var.model_capacity >= 1 && var.model_capacity <= 1000
-    error_message = "Model capacity must be between 1 and 1000."
-  }
-}
-
-# School-Safe System Message with Enhanced Prompt Engineering
-variable "school_safe_system_message" {
-  description = "System message for school-safe AI interactions with enhanced prompt engineering for students under 16."
-  type        = string
-  default     = "You are a helpful, safe, and educational AI assistant designed specifically for students under the age of 16. Your role is to:\n\n1. Provide accurate, age-appropriate educational content\n2. Encourage learning, critical thinking, and curiosity\n3. Maintain a supportive and positive tone\n4. Refuse to discuss or provide information about inappropriate topics including violence, explicit content, harmful activities, or anything not suitable for minors\n5. Guide students toward reliable educational resources\n6. Promote digital citizenship and online safety\n7. Encourage students to verify information with teachers and trusted sources\n\nWhen responding:\n- Use clear, simple language appropriate for the student's age\n- Provide educational value in every response\n- Encourage further learning and exploration of appropriate topics\n- If asked about inappropriate content, politely redirect to educational alternatives\n- Always prioritize the student's safety, well-being, and educational development\n\nRemember: The user is under 16 years old and requires high-integrity, safe, and educational responses."
-}
-
-
 # App Service Configuration
 variable "app_service_plan_name" {
   description = "Name for the App Service Plan. (Default: schoolgpt-asp)"
@@ -121,6 +55,18 @@ variable "app_service_sku" {
     ], var.app_service_sku)
     error_message = "App Service SKU must be one of: B1, B2, B3, S1, S2, S3, P1v2, P2v2, P3v2"
   }
+}
+
+variable "frontend_app_name" {
+  description = "Frontend web app name (must be globally unique)"
+  type        = string
+  default     = "School-Safe-GPT-FE-1234"
+}
+
+variable "backend_app_name" {
+  description = "Backend web app name (must be globally unique)"
+  type        = string
+  default     = "School-Safe-GPT-BE-1234"
 }
 
 
@@ -195,14 +141,3 @@ variable "sql_azuread_admin_object_id" {
 } 
 
 
-variable "frontend_app_name" {
-  description = "Frontend web app name (must be globally unique)"
-  type        = string
-  default     = "School-Safe-GPT-FE-1234"
-}
-
-variable "backend_app_name" {
-  description = "Backend web app name (must be globally unique)"
-  type        = string
-  default     = "School-Safe-GPT-BE-1234"
-}

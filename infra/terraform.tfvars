@@ -9,15 +9,6 @@ resource_group_name   = ""
 location              = "uksouth"
 azure_tenant_id       = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea" # REPLACE_WITH_YOUR_TENANT_ID
 
-# Azure AI Foundry Configuration (Auto-generated unique names)
-ai_foundry_name      = "blundellaifoundry8fdc"
-ai_foundry_subdomain = "blundellai8fdc"
-azure_openai_model                 = "gpt-4o" # Options: gpt-35-turbo, gpt-4, gpt-4o
-azure_openai_model_version         = "2024-11-20"
-azure_openai_model_deployment_name = "school-safe-gpt"
-model_sku_name                     = "Standard"
-model_capacity                     = 50 # Tokens per minute (reduced to fit quota)
-
 # SQL Database Configuration (Auto-generated unique names)
 sql_server_name       = "blundellsqlsrv8fdc"
 sql_admin                   = "sqladminuser"

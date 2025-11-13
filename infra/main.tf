@@ -20,50 +20,6 @@ resource "azurerm_resource_group" "main" {
   }
 }
 
-###########################################
-# AI Foundry with Enhanced Content Filtering
-###########################################
-
-# Azure AI Foundry (OpenAI) - School Safe Configuration
-resource "azurerm_cognitive_account" "ai_foundry" {
-  name                  = var.ai_foundry_name
-  location              = azurerm_resource_group.main.location
-  resource_group_name   = azurerm_resource_group.main.name
-  kind                  = "OpenAI"
-  sku_name              = "S0"
-  custom_subdomain_name = var.ai_foundry_subdomain
-
-  identity {
-    type = "SystemAssigned"
-  }
-
-  tags = {
-    Environment    = "School-Safe-GPT"
-    Purpose        = "AI Foundry for Education"
-    ContentFilter  = "High"
-    TargetAudience = "Students Under 16"
-  }
-}
-
-# Content filtering is configured via environment variables in the App Service
-# and managed through Azure AI Foundry portal for real-time control
-
-# Model Deployment for School Safe AI
-resource "azurerm_cognitive_deployment" "gpt_model" {
-  name                 = var.azure_openai_model_deployment_name
-  cognitive_account_id = azurerm_cognitive_account.ai_foundry.id
-
-  model {
-    format  = "OpenAI"
-    name    = var.azure_openai_model
-    version = var.azure_openai_model_version
-  }
-
-  sku {
-    name     = var.model_sku_name
-    capacity = var.model_capacity
-  }
-}
 
 ###########################################
 ## App Service
@@ -122,42 +78,10 @@ resource "azurerm_linux_web_app" "backend" {
     "WEBSITES_PORT"                       = "80"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
 
-    # Azure AI Foundry Configuration - School Safe Settings
-    "AI_FOUNDRY_ENDPOINT"          = azurerm_cognitive_account.ai_foundry.endpoint
-    "AI_FOUNDRY_KEY"               = azurerm_cognitive_account.ai_foundry.primary_access_key
-    "AI_FOUNDRY_MODEL"             = azurerm_cognitive_deployment.gpt_model.name
-    "AI_FOUNDRY_TEMPERATURE"       = "0.1" # Low temperature for consistent, safe responses
-    "AI_FOUNDRY_TOP_P"             = "0.9"
-    "AI_FOUNDRY_MAX_TOKENS"        = "800" # Controlled response length
-    "AI_FOUNDRY_FREQUENCY_PENALTY" = "0.5"
-    "AI_FOUNDRY_PRESENCE_PENALTY"  = "0.0"
-
-    # School-Safe System Message with Enhanced Prompt Engineering
-    "AI_FOUNDRY_SYSTEM_MESSAGE" = var.school_safe_system_message
-
     # Application Insights for Monitoring
     "APPINSIGHTS_INSTRUMENTATIONKEY"        = azurerm_application_insights.main.instrumentation_key
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
 
-    # Authentication and Security (Required for School Access)
-    "AUTH_ENABLED"     = "true"
-    "ENTRA_ID_ENABLED" = "true"
-
-    # School-Specific Settings
-    "ENVIRONMENT"          = "SCHOOL_SAFE"
-    "TARGET_AUDIENCE"      = "STUDENTS_UNDER_16"
-    "CONTENT_MODERATION"   = "HIGH"
-    "CHAT_HISTORY_ENABLED" = "true"
-
-    # UI Customization for Schools
-    "UI_TITLE"             = var.school_name
-    "UI_CHAT_TITLE"        = "School AI Assistant"
-    "UI_CHAT_DESCRIPTION"  = "Ask me questions about your studies! I'm here to help with educational content."
-    "UI_SHOW_SHARE_BUTTON" = "false" # Disabled for school safety
-
-    # Feature Flags
-    "ENABLE_CONTENT_FILTER_LOGGING" = "true"
-    "ENABLE_CHAT_HISTORY"           = "true"
 
     # SQL Connection String
     "SQL_CONNECTION_STRING" = local.sql_connection_string
@@ -208,42 +132,9 @@ resource "azurerm_linux_web_app" "frontend" {
     "WEBSITES_PORT"                       = "80"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
 
-    # Azure AI Foundry Configuration - School Safe Settings
-    "AI_FOUNDRY_ENDPOINT"          = azurerm_cognitive_account.ai_foundry.endpoint
-    "AI_FOUNDRY_KEY"               = azurerm_cognitive_account.ai_foundry.primary_access_key
-    "AI_FOUNDRY_MODEL"             = azurerm_cognitive_deployment.gpt_model.name
-    "AI_FOUNDRY_TEMPERATURE"       = "0.1" # Low temperature for consistent, safe responses
-    "AI_FOUNDRY_TOP_P"             = "0.9"
-    "AI_FOUNDRY_MAX_TOKENS"        = "800" # Controlled response length
-    "AI_FOUNDRY_FREQUENCY_PENALTY" = "0.5"
-    "AI_FOUNDRY_PRESENCE_PENALTY"  = "0.0"
-
-    # School-Safe System Message with Enhanced Prompt Engineering
-    "AI_FOUNDRY_SYSTEM_MESSAGE" = var.school_safe_system_message
-
     # Application Insights for Monitoring
     "APPINSIGHTS_INSTRUMENTATIONKEY"        = azurerm_application_insights.main.instrumentation_key
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
-
-    # Authentication and Security (Required for School Access)
-    "AUTH_ENABLED"     = "true"
-    "ENTRA_ID_ENABLED" = "true"
-
-    # School-Specific Settings
-    "ENVIRONMENT"          = "SCHOOL_SAFE"
-    "TARGET_AUDIENCE"      = "STUDENTS_UNDER_16"
-    "CONTENT_MODERATION"   = "HIGH"
-    "CHAT_HISTORY_ENABLED" = "true"
-
-    # UI Customization for Schools
-    "UI_TITLE"             = var.school_name
-    "UI_CHAT_TITLE"        = "School AI Assistant"
-    "UI_CHAT_DESCRIPTION"  = "Ask me questions about your studies! I'm here to help with educational content."
-    "UI_SHOW_SHARE_BUTTON" = "false" # Disabled for school safety
-
-    # Feature Flags
-    "ENABLE_CONTENT_FILTER_LOGGING" = "true"
-    "ENABLE_CHAT_HISTORY"           = "true"
 
     # SQL Connection String
     "SQL_CONNECTION_STRING" = local.sql_connection_string
@@ -453,8 +344,6 @@ resource "null_resource" "key_vault_cleanup" {
 output "deployment_summary" {
   value = {
     web_app_url           = "https://${azurerm_linux_web_app.frontend.default_hostname}"
-    ai_foundry_endpoint   = azurerm_cognitive_account.ai_foundry.endpoint
-    ai_model_deployment   = azurerm_cognitive_deployment.gpt_model.name
     application_insights  = azurerm_application_insights.main.name
     key_vault             = azurerm_key_vault.main.name
     resource_group        = azurerm_resource_group.main.name
@@ -476,10 +365,9 @@ output "school_safe_configuration" {
 output "next_steps" {
   value = [
     "1. Configure Entra ID authentication in Azure Portal",
-    "2. Deploy model to AI Foundry endpoint: ${azurerm_cognitive_account.ai_foundry.endpoint}",
-    "3. Push application code to trigger GitHub Actions deployment",
-    "4. Configure content filter policies in AI Foundry portal",
-    "5. Test application with school-appropriate content"
+    "2. Push application code to trigger GitHub Actions deployment",
+    "3. Configure content filter policies in AI Foundry portal",
+    "4. Test application with school-appropriate content"
   ]
 }
 
@@ -497,13 +385,6 @@ output "resource_group_name" {
 output "key_vault_name" {
   value = azurerm_key_vault.main.name
 }
-
-# Sensitive outputs
-output "ai_foundry_api_key" {
-  value     = azurerm_cognitive_account.ai_foundry.primary_access_key
-  sensitive = true
-}
-
 
 # Output for SQL connection string (sensitive)
 output "sql_connection_string" {

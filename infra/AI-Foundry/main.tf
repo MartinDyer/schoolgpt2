@@ -25,7 +25,7 @@ resource "azurerm_resource_group" "rg" {
 ##
 
 resource "azurerm_cognitive_account" "ai_foundry" {
-  name                = "aifoundry${random_string.unique.result}"
+  name                = "School-Safe-GPT-AIF-${random_string.unique.result}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   kind                = "AIServices"
@@ -37,7 +37,7 @@ resource "azurerm_cognitive_account" "ai_foundry" {
   sku_name = "S0"
 
   # required for stateful development in Foundry including agent service
-  custom_subdomain_name = "aifoundry${random_string.unique.result}"
+  custom_subdomain_name = "School-Safe-GPT-AIF-${random_string.unique.result}"
   project_management_enabled = true
 
   tags = {
