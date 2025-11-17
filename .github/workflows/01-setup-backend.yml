@@ -166,6 +166,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add infra/backend.tf infra/terraform.tfvars
+          git add infra/AI-Foundry/backend.tf infra//AI-Foundry/terraform.tfvars
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
