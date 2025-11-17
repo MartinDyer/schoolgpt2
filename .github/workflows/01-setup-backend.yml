@@ -48,7 +48,7 @@ jobs:
         run: |
           # Generate unique names for backend storage based on school
           # SCHOOL_PREFIX=$(echo "${{ github.event.inputs.school_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-8)
-          SCHOOL_PREFIX=$(echo "Management-SA-${{ github.event.inputs.school_name }}")
+          SCHOOL_PREFIX=$(echo "MGT-${{ github.event.inputs.school_name }}")
           RANDOM_SUFFIX=$(openssl rand -hex 3)
           STORAGE_ACCOUNT="${SCHOOL_PREFIX}tfstate${RANDOM_SUFFIX}"
           
