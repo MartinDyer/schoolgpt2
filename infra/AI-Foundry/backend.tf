@@ -1,8 +1,8 @@
 terraform {
   backend "azurerm" {
-    resource_group_name  = "Management"
-    storage_account_name = "tfstatelax"
+    resource_group_name  = "testscho-production-rg"
+    storage_account_name = "testschotfstate8b2460"
     container_name       = "tfstate"
-    key                  = "terraform.tfstate"
+    key                  = "production.terraform.tfstate"
   }
 }
