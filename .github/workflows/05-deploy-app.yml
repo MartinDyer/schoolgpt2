@@ -1,9 +1,6 @@
 name: 🚀 04- Deploy React & Node to Azure App Service
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 env:
@@ -47,4 +44,4 @@ jobs:
         with:
           app-name: School-Safe-GPT-FE-1234
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: app/app.zip
+          package: app/Frontend/app.zip
