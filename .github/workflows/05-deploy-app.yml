@@ -37,7 +37,7 @@ jobs:
       - name: Archive app for deployment
         working-directory: ./app/Frontend
         run: |
-          zip -r ../frontend.zip . -x "*.git*"
+          zip -r frontend.zip . -x "*.git*"
 
       # Optional: debug – show files
       - name: List files
