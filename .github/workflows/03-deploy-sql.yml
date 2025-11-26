@@ -110,7 +110,7 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd SQL\infra
+          cd .\SQL\infra
           echo "🔄 Initializing Terraform with Azure backend..."
           terraform init \
             -backend-config="resource_group_name=${{ steps.backend-config.outputs.resource_group_backend }}" \
@@ -120,14 +120,14 @@ jobs:
 
       - name: Terraform Validate
         run: |
-          cd SQL\infra
+          cd .\SQL\infra
           echo "✅ Validating Terraform configuration..."
           terraform validate
 
       - name: Terraform Plan
         id: plan
         run: |
-          cd SQL\infra
+          cd .\SQL\infra
           echo "📋 Creating Terraform plan..."
           terraform plan \
             -var-file=terraform.tfvars \
@@ -190,7 +190,7 @@ jobs:
       - name: Terraform Apply
         if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
         run: |
-          cd sql\infra
+          cd .\SQL\infra
           echo "🚀 Applying Terraform configuration..."
           terraform apply tfplan
 
@@ -198,7 +198,7 @@ jobs:
         if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
         id: terraform_outputs
         run: |
-          cd sql\infra
+          cd .\SQL\infra
           echo "📊 Getting deployment outputs..."
           
           # Get outputs and format them
