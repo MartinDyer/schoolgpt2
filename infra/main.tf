@@ -2,7 +2,7 @@
 # Provider
 provider "azurerm" {
   features {}
-  #subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
+  subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
 }
 
 resource "random_string" "unique" {
@@ -25,10 +25,6 @@ resource "random_string" "unique" {
 resource "azurerm_resource_group" "foundry_rg" {
   name     = "rg-aifoundry-${random_string.unique.result}"
   location = var.location
-
-lifecycle {
-    prevent_destroy = true
-  }
   
 }
 
@@ -80,11 +76,6 @@ resource "azurerm_cognitive_deployment" "aifoundry_deployment_gpt_4o" {
     name    = "gpt-4o"
     version = "2024-11-20"
   }
-
-lifecycle {
-    prevent_destroy = true
-  }
-
 }
 
 
