@@ -2,7 +2,7 @@
 # Provider
 provider "azurerm" {
   features {}
-  #subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
+  subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
 }
 
 resource "random_string" "unique" {
@@ -23,7 +23,7 @@ resource "random_string" "unique" {
 ## Create a resource group for the resources to be stored in
 ##
 resource "azurerm_resource_group" "rg" {
-  name     = "rg-aifoundry-School-Safe-GPT"
+  name     = "rg-aifoundry-${random_string.unique.result}"
   location = var.location
 
 lifecycle {
