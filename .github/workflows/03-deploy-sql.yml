@@ -190,7 +190,7 @@ jobs:
       - name: Terraform Apply
         if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
         run: |
-          cd infra\sql\infra
+          cd sql\infra
           echo "🚀 Applying Terraform configuration..."
           terraform apply tfplan
 
@@ -198,7 +198,7 @@ jobs:
         if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
         id: terraform_outputs
         run: |
-          cd infra\sql\infra
+          cd sql\infra
           echo "📊 Getting deployment outputs..."
           
           # Get outputs and format them
