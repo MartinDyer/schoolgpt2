@@ -39,7 +39,7 @@ resource "azurerm_cognitive_account" "ai_foundry" {
   name                = "School-Safe-GPT-AIF-${random_string.unique.result}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-  kind                = "AIServices"
+  kind                = "OpenAI"
 
   identity {
     type = "SystemAssigned"
@@ -76,7 +76,7 @@ resource "azurerm_cognitive_deployment" "aifoundry_deployment_gpt_4o" {
   }
 
   model {
-    format  = "AIServices"
+    format  = "OpenAI"
     name    = "gpt-4o"
     version = "2024-11-20"
   }
@@ -147,7 +147,7 @@ resource "azurerm_linux_web_app" "frontend" {
 
     # 🔗 Link frontend → backend:
     # The frontend can read this env var and call the backend.
-    "API_BASE_URL" = "https://${azurerm_linux_web_app.backend.default_hostname}"
+    #"API_BASE_URL" = "https://${azurerm_linux_web_app.backend.default_hostname}"
      
     # Basic Configuration
     "WEBSITES_PORT"                       = "80"
@@ -183,10 +183,10 @@ output "frontend_url" {
   value       = "https://${azurerm_linux_web_app.frontend.default_hostname}"
 }
 
-output "backend_url" {
-  description = "Public URL of the backend app"
-  value       = "https://${azurerm_linux_web_app.backend.default_hostname}"
-}
+# output "backend_url" {
+#   description = "Public URL of the backend app"
+#   value       = "https://${azurerm_linux_web_app.backend.default_hostname}"
+# }
 
 
 

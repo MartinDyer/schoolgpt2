@@ -33,7 +33,7 @@ resource "azurerm_cognitive_account" "ai_foundry" {
   name                = "School-Safe-GPT-AIF-${random_string.unique.result}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-  kind                = "AIServices"
+  kind                = "OpenAI"
 
   identity {
     type = "SystemAssigned"
