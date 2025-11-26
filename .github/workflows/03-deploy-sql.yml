@@ -1,0 +1,242 @@
+name: 🚀 03 - Deploy SchoolGPT Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+        - development
+      school_name:
+        description: 'School Name (for tagging and identification)'
+        required: true
+        type: string
+      action:
+        description: 'Terraform Action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+        - plan
+        - apply
+      auto_approve:
+        description: 'Auto-approve apply (skip manual confirmation)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: 🏫 Welcome to SchoolGPT Deployment
+        run: |
+          echo "🏫 Deploying SchoolGPT for: ${{ github.event.inputs.school_name }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo "⚡ Action: ${{ github.event.inputs.action }}"
+          echo "🤖 Auto-approve: ${{ github.event.inputs.auto_approve }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set Terraform Azure credentials
+        run: |
+          echo "ARM_CLIENT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).clientId }}" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}" >> $GITHUB_ENV
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+          terraform_wrapper: false
+
+      - name: 🔧 Check Backend Configuration
+        run: |
+          if [ ! -f "infra/backend.tf" ]; then
+            echo "❌ Backend configuration not found!"
+            echo "Please run the 'Setup SchoolGPT Backend Storage' workflow first."
+            echo "This creates the Azure Storage account for Terraform state management."
+            exit 1
+          else
+            echo "✅ Backend configuration found"
+            cat infra/backend.tf
+          fi
+
+      - name: 🔧 Read Backend Configuration
+        id: backend-config
+        run: |
+          echo "🔍 Reading backend configuration from backend.tf..."
+          cd infra
+          
+          if [ ! -f "backend.tf" ]; then
+            echo "❌ Backend configuration not found!"
+            echo "Please run the 'Setup SchoolGPT Backend Storage' workflow first."
+            exit 1
+          fi
+          
+          # Extract backend configuration from backend.tf
+          RESOURCE_GROUP_BACKEND=$(grep -o 'resource_group_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
+          STORAGE_ACCOUNT=$(grep -o 'storage_account_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
+          CONTAINER_NAME=$(grep -o 'container_name *= *"[^"]*"' backend.tf | cut -d'"' -f2)
+          
+          echo "✅ Backend configuration found:"
+          echo "  Resource Group: $RESOURCE_GROUP_BACKEND"
+          echo "  Storage Account: $STORAGE_ACCOUNT" 
+          echo "  Container: $CONTAINER_NAME"
+          
+          # Set outputs for next steps
+          echo "resource_group_backend=$RESOURCE_GROUP_BACKEND" >> $GITHUB_OUTPUT
+          echo "storage_account=$STORAGE_ACCOUNT" >> $GITHUB_OUTPUT
+          echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
+
+      - name: Terraform Init
+        run: |
+          cd infra\sql\infra
+          echo "🔄 Initializing Terraform with Azure backend..."
+          terraform init \
+            -backend-config="resource_group_name=${{ steps.backend-config.outputs.resource_group_backend }}" \
+            -backend-config="storage_account_name=${{ steps.backend-config.outputs.storage_account }}" \
+            -backend-config="container_name=${{ steps.backend-config.outputs.container_name }}" \
+            -backend-config="key=${{ github.event.inputs.environment }}.terraform.tfstate"
+
+      - name: Terraform Validate
+        run: |
+          cd infra\sql\infra
+          echo "✅ Validating Terraform configuration..."
+          terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd infra\sql\infra
+          echo "📋 Creating Terraform plan..."
+          terraform plan \
+            -var-file=terraform.tfvars \
+            -var="environment=${{ github.event.inputs.environment }}" \
+            -var="school_name=${{ github.event.inputs.school_name }}" \
+            -out=tfplan \
+            -no-color
+        continue-on-error: true
+
+      - name: 📊 Post Plan Results
+        uses: actions/github-script@v7
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          script: |
+            const output = `#### 🏫 SchoolGPT Terraform Plan Results
+            
+            **School:** \`${{ github.event.inputs.school_name }}\`
+            **Environment:** \`${{ github.event.inputs.environment }}\`
+            **Action:** \`${{ github.event.inputs.action }}\`
+            
+            #### Terraform Plan
+            \`\`\`
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+            
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            // Only create comment if running from PR/issue context
+            if (context.issue && context.issue.number) {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              });
+              console.log("Plan results posted as comment");
+            } else {
+              // For workflow_dispatch, just log the results
+              console.log("=".repeat(50));
+              console.log("TERRAFORM PLAN RESULTS");
+              console.log("=".repeat(50));
+              console.log(output);
+              console.log("=".repeat(50));
+            }
+
+      - name: 🚦 Plan Status Check
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "❌ Terraform plan failed!"
+          exit 1
+
+      - name: ⏸️ Manual Approval Required
+        if: github.event.inputs.action == 'apply' && github.event.inputs.auto_approve == 'false'
+        run: |
+          echo "⏸️ Manual approval required for apply action"
+          echo "Review the plan above and re-run this workflow with auto_approve=true if you want to proceed"
+          echo "Or use the separate 'Apply Infrastructure' workflow"
+          exit 0
+
+      - name: Terraform Apply
+        if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
+        run: |
+          cd infra\sql\infra
+          echo "🚀 Applying Terraform configuration..."
+          terraform apply tfplan
+
+      - name: 📤 Get Terraform Outputs
+        if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
+        id: terraform_outputs
+        run: |
+          cd infra\sql\infra
+          echo "📊 Getting deployment outputs..."
+          
+          # Get outputs and format them
+          echo "=== SchoolGPT Deployment Summary ===" >> deployment_summary.txt
+          echo "School: ${{ github.event.inputs.school_name }}" >> deployment_summary.txt
+          echo "Environment: ${{ github.event.inputs.environment }}" >> deployment_summary.txt
+          echo "Deployed: $(date)" >> deployment_summary.txt
+          echo "" >> deployment_summary.txt
+          
+          if terraform output deployment_summary > /dev/null 2>&1; then
+            echo "🌐 Application URLs and Resources:" >> deployment_summary.txt
+            terraform output -json deployment_summary | jq -r 'to_entries[] | "\(.key): \(.value)"' >> deployment_summary.txt
+          fi
+          
+          echo "" >> deployment_summary.txt
+          echo "📋 Next Steps:" >> deployment_summary.txt
+          echo "1. Run the 'Deploy SchoolGPT Application' workflow" >> deployment_summary.txt
+          echo "2. Configure authentication via Azure Portal" >> deployment_summary.txt
+          echo "3. Test your SchoolGPT application" >> deployment_summary.txt
+          
+          cat deployment_summary.txt
+
+      - name: 📋 Upload Deployment Summary
+        if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-summary-${{ github.event.inputs.environment }}
+          path: infra/deployment_summary.txt
+
+      - name: 🎉 Deployment Complete
+        if: github.event.inputs.action == 'apply' && (github.event.inputs.auto_approve == 'true' || github.event.inputs.auto_approve == true)
+        run: |
+          echo "🎉 SchoolGPT infrastructure deployed successfully!"
+          echo ""
+          echo "🏫 School: ${{ github.event.inputs.school_name }}"
+          echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+          echo ""
+          echo "📋 Next Steps:"
+          echo "1. Run the 'Deploy SchoolGPT Application' workflow"
+          echo "2. Configure authentication via Azure Portal"
+          echo "3. Your SchoolGPT will be ready for students and teachers!" 

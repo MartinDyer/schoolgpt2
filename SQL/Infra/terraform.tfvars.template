@@ -1,0 +1,105 @@
+#################################################################
+# SchoolGPT Infrastructure - Terraform Variables Template
+# Copy this file to terraform.tfvars and update with your values
+#################################################################
+
+#################################################################
+# Basic Configuration
+#################################################################
+
+# Azure Subscription and Tenant
+azure_subscription_id = "your-subscription-id"                    # Your Azure Subscription ID
+azure_tenant_id       = "your-tenant-id"                          # Your Azure Tenant ID
+
+# Resource Group and Location
+resource_group_name   = "schoolgpt-rg"                           # Resource group name
+location              = "uksouth"                                 # Azure region (uksouth, eastus, etc.)
+
+# Environment
+environment           = "production"                              # production, staging, development
+
+#################################################################
+# School Configuration
+#################################################################
+
+school_name           = "Your School Name"                        # School name for UI customization
+alert_email           = "admin@yourschool.edu"                    # Email for alerts
+
+#################################################################
+# Azure AI Foundry Configuration
+#################################################################
+
+ai_foundry_name       = "yourschool-ai-foundry"                   # AI Foundry name (globally unique)
+ai_foundry_subdomain  = "yourschool-ai-foundry"                   # Custom subdomain (globally unique)
+
+# Model Configuration
+azure_openai_model    = "gpt-35-turbo"                           # Model: gpt-35-turbo, gpt-4, gpt-4o
+azure_openai_model_version = "0613"                              # Model version
+azure_openai_model_deployment_name = "school-safe-chat"          # Deployment name
+model_sku_name        = "Standard"                                # SKU: Standard
+model_capacity        = 120                                       # Tokens per minute (1-1000)
+
+#################################################################
+# Container Registry Configuration
+#################################################################
+
+acr_name              = "yourschoolacr"                           # Container registry name (globally unique)
+acr_login_server      = "yourschoolacr.azurecr.io"               # ACR login server
+
+#################################################################
+# App Service Configuration
+#################################################################
+
+app_service_plan_name = "schoolgpt-asp"                          # App Service Plan name
+web_app_name          = "yourschool-ai-app"                      # Web App name (globally unique)
+app_service_sku       = "B2"                                     # B1(small), B2(medium), S1(large), S2(x-large)
+
+# Docker Configuration
+docker_image          = "schoolgpt-app"                          # Docker image name
+docker_tag            = "latest"                                 # Docker image tag
+
+## SQL is used for chat history and audits. No Table Storage configuration needed.
+
+#################################################################
+# Application Insights Configuration
+#################################################################
+
+app_insights_name     = "schoolgpt-ai"                           # Application Insights name
+
+#################################################################
+# Key Vault Configuration
+#################################################################
+
+key_vault_name        = "yourschool-kv"                          # Key Vault name (globally unique)
+key_vault_admin_object_id = "your-object-id"                     # Your Azure AD Object ID
+
+#################################################################
+# School Branding & Customization
+#################################################################
+
+# System Message for School-Safe AI (Customize as needed)
+school_safe_system_message = "You are a helpful, safe, and educational AI assistant designed specifically for students under the age of 16. Your role is to provide accurate, age-appropriate educational content, encourage learning and critical thinking, maintain a supportive tone, and always prioritize student safety and educational development."
+
+#################################################################
+# DEPLOYMENT NOTES
+#################################################################
+#
+# 1. Replace all "your-*" values with your actual Azure details
+# 2. Ensure all globally unique names are unique across Azure
+# 3. Use strong passwords for production environments
+# 4. Test in staging environment first
+# 5. Configure Entra ID authentication after deployment
+#
+# REQUIRED VALUES TO UPDATE:
+# - azure_subscription_id
+# - azure_tenant_id
+# - ai_foundry_name (globally unique)
+# - ai_foundry_subdomain (globally unique)
+# - acr_name (globally unique)
+# - web_app_name (globally unique)
+# - key_vault_name (globally unique)
+# - key_vault_admin_object_id
+# - alert_email
+# - school_name
+#
+################################################################# 

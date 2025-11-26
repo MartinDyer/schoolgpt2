@@ -4,7 +4,7 @@ This document explains the frontend app in simple English for developers. It tel
 
 ## What is this project?
 
-This is the frontend for SchoolSafeAI. It is a small React + Vite app that shows a chat UI where a user can talk with an AI assistant. The frontend talks to a backend (Node or similar) to send and receive chat messages, save chat history, and share chats.
+This is the frontend for SchoolSafeGPT. It is a small React + Vite app that shows a chat UI where a user can talk with an AI assistant. The frontend talks to a backend (Node or similar) to send and receive chat messages, save chat history, and share chats.
 
 ## High level flow (easy words)
 
