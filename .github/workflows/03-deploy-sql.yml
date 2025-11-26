@@ -20,7 +20,7 @@ jobs:
       # Deploy DACPAC to Azure SQL
       - name: Publish DACPAC to Azure SQL
         run: |
-          SqlPackage \
+          sqlpackage \
             /Action:Publish \
             /SourceFile:"./SQL/DAC/schoolsafegpt.dacpac" \
             /TargetServerName:"school1sqlsrvca30.database.windows.net" \
