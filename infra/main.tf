@@ -22,7 +22,7 @@ resource "random_string" "unique" {
 ##
 ## Create a resource group for the resources to be stored in
 ##
-resource "azurerm_resource_group" "rg" {
+resource "azurerm_resource_group" "foundry_rg" {
   name     = "rg-aifoundry-${random_string.unique.result}"
   location = var.location
 
@@ -38,7 +38,7 @@ lifecycle {
 resource "azurerm_cognitive_account" "ai_foundry" {
   name                = "School-Safe-GPT-AIF-${random_string.unique.result}"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.foundry_rg.name
   kind                = "OpenAI"
 
   identity {
@@ -90,7 +90,7 @@ lifecycle {
 
 # Resource Group
 resource "azurerm_resource_group" "main" {
-  name     = coalesce(var.resource_group_name, "${replace(lower(var.school_name), " ", "-")}-${var.environment}-rg")
+  name     = coalesce(var.resource_group_name, "${replace(lower(var.school_name), " ", "-")}-${var.environment}-main")
   location = var.location
 
   tags = {
