@@ -2,7 +2,75 @@
 # Provider
 provider "azurerm" {
   features {}
+    subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
 }
+
+resource "azurerm_resource_group" "rg" {
+  name     = "rg-aifoundry-School-Safe-GPT"
+  location = var.location
+
+lifecycle {
+    prevent_destroy = true
+  }
+  
+}
+
+## Create an AI Foundry resource
+##
+
+resource "azurerm_cognitive_account" "ai_foundry" {
+  name                = "School-Safe-GPT-AIF-${random_string.unique.result}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  kind                = "AIServices"
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  sku_name = "S0"
+
+  # required for stateful development in Foundry including agent service
+  custom_subdomain_name = "School-Safe-GPT-AIF-${random_string.unique.result}"
+  project_management_enabled = true
+
+  tags = {
+    Acceptance = "Test"
+  }
+
+lifecycle {
+    prevent_destroy = true
+  }
+
+}
+
+## Create a deployment for OpenAI's GPT-4o in the AI Foundry resource
+##
+resource "azurerm_cognitive_deployment" "aifoundry_deployment_gpt_4o" {
+  depends_on = [
+    azurerm_cognitive_account.ai_foundry
+  ]
+
+  name                 = "gpt-4o"
+  cognitive_account_id = azurerm_cognitive_account.ai_foundry.id
+
+  sku {
+    name     = "GlobalStandard"
+    capacity = 1
+  }
+
+  model {
+    format  = "OpenAI"
+    name    = "gpt-4o"
+    version = "2024-11-20"
+  }
+
+lifecycle {
+    prevent_destroy = true
+  }
+
+}
+
 
 #################################################################
 # School Safe AI App using Azure AI Foundry - Simplified Template
@@ -68,7 +136,7 @@ resource "azurerm_mssql_server" "main" {
   location                     = azurerm_resource_group.main.location
   version                      = "12.0"
   administrator_login          = var.sql_admin
-  administrator_login_password = "SchoolGPT@2024!" # REPLACE: Use a secure password
+  administrator_login_password = var.sql_password
 
   tags = {
     Environment = "School-Safe-GPT"
@@ -96,7 +164,7 @@ resource "azurerm_mssql_database" "main" {
 
 # Build SQL connection string
 locals {
-  sql_connection_string = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.main.name};Persist Security Info=False;User ID=${var.sql_admin};Password=${administrator_login_password.value};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+  sql_connection_string = "Server=tcp:${azurerm_mssql_server.main.fully_qualified_domain_name},1433;Initial Catalog=${azurerm_mssql_database.main.name};Persist Security Info=False;User ID=${var.sql_admin};Password=${var.sql_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
 }
 # Store SQL connection string in Key Vault
 resource "azurerm_key_vault_secret" "sql_connection_string" {
@@ -134,15 +202,6 @@ resource "null_resource" "key_vault_cleanup" {
 # Outputs - Enhanced Information
 ###########################################
 
-output "deployment_summary" {
-  value = {
-    web_app_url           = "https://${azurerm_linux_web_app.frontend.default_hostname}"
-    application_insights  = azurerm_application_insights.main.name
-    key_vault             = azurerm_key_vault.main.name
-    resource_group        = azurerm_resource_group.main.name
-    database               = azurerm_mssql_database.main.name
-  }
-}
 
 output "school_safe_configuration" {
   value = {

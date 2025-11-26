@@ -68,7 +68,7 @@ variable "sql_admin" {
 variable "sql_password" {
   description = "Administrator login password for Azure SQL Server. If not provided, a strong password will be auto-generated and stored in Key Vault."
   type        = string
-  default     = null
+  default     = "SchoolGPT@2024!" # REPLACE: Use a secure password
 }
 
 variable "sql_db_name" {

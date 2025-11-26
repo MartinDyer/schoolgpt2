@@ -2,11 +2,91 @@
 # Provider
 provider "azurerm" {
   features {}
+  #subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
+}
+
+resource "random_string" "unique" {
+  length      = 5
+  min_numeric = 5
+  numeric     = true
+  special     = false
+  lower       = true
+  upper       = false
 }
 
 #################################################################
 # School Safe AI App using Azure AI Foundry - Simplified Template
 #################################################################
+
+## Create a resource group for the resources to be stored in
+##
+## Create a resource group for the resources to be stored in
+##
+resource "azurerm_resource_group" "rg" {
+  name     = "rg-aifoundry-School-Safe-GPT"
+  location = var.location
+
+lifecycle {
+    prevent_destroy = true
+  }
+  
+}
+
+## Create an AI Foundry resource
+##
+
+resource "azurerm_cognitive_account" "ai_foundry" {
+  name                = "School-Safe-GPT-AIF-${random_string.unique.result}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  kind                = "OpenAI"
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  sku_name = "S0"
+
+  # required for stateful development in Foundry including agent service
+  custom_subdomain_name = "School-Safe-GPT-AIF-${random_string.unique.result}"
+
+  tags = {
+    Acceptance = "Test"
+  }
+
+lifecycle {
+    prevent_destroy = true
+  }
+
+}
+
+## Create a deployment for OpenAI's GPT-4o in the AI Foundry resource
+##
+resource "azurerm_cognitive_deployment" "aifoundry_deployment_gpt_4o" {
+  depends_on = [
+    azurerm_cognitive_account.ai_foundry
+  ]
+
+  name                 = "gpt-4o"
+  cognitive_account_id = azurerm_cognitive_account.ai_foundry.id
+
+  sku {
+    name     = "GlobalStandard"
+    capacity = 1
+  }
+
+  model {
+    format  = "OpenAI"
+    name    = "gpt-4o"
+    version = "2024-11-20"
+  }
+
+lifecycle {
+    prevent_destroy = true
+  }
+
+}
+
 
 # Resource Group
 resource "azurerm_resource_group" "main" {
