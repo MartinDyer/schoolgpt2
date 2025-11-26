@@ -110,7 +110,7 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd sql\infra
+          cd SQL\infra
           echo "🔄 Initializing Terraform with Azure backend..."
           terraform init \
             -backend-config="resource_group_name=${{ steps.backend-config.outputs.resource_group_backend }}" \
@@ -120,14 +120,14 @@ jobs:
 
       - name: Terraform Validate
         run: |
-          cd sql\infra
+          cd SQL\infra
           echo "✅ Validating Terraform configuration..."
           terraform validate
 
       - name: Terraform Plan
         id: plan
         run: |
-          cd sql\infra
+          cd SQL\infra
           echo "📋 Creating Terraform plan..."
           terraform plan \
             -var-file=terraform.tfvars \
