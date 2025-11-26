@@ -39,6 +39,10 @@ jobs:
         run: |
           zip -r ../frontend.zip . -x "*.git*"
 
+      # Optional: debug – show files
+      - name: List files
+        run: ls -R
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
