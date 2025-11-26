@@ -2,7 +2,7 @@
 # Provider
 provider "azurerm" {
   features {}
-  subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
+  #subscription_id = "b314f8eb-7c3d-4ca4-87c9-5daa33527126"
 }
 
 resource "random_string" "unique" {
@@ -39,7 +39,7 @@ resource "azurerm_cognitive_account" "ai_foundry" {
   name                = "School-Safe-GPT-AIF-${random_string.unique.result}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-  kind                = "OpenAI"
+  kind                = "AIServices"
 
   identity {
     type = "SystemAssigned"
@@ -76,7 +76,7 @@ resource "azurerm_cognitive_deployment" "aifoundry_deployment_gpt_4o" {
   }
 
   model {
-    format  = "OpenAI"
+    format  = "AIServices"
     name    = "gpt-4o"
     version = "2024-11-20"
   }
@@ -121,68 +121,9 @@ resource "azurerm_service_plan" "main" {
   }
 }
 
-#####################
-# Backend Web App
-#####################
-
-resource "azurerm_linux_web_app" "backend" {
-  name                = var.backend_app_name
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  service_plan_id     = azurerm_service_plan.main.id
-
-  https_only = true
-
-  site_config {
-    # Node runtime for backend API
-    application_stack {
-      node_version = "18-lts"
-    }
-
-    # Allow requests from the frontend app via CORS
-    cors {
-      # allowed_origins = [
-      #   "https://${azurerm_linux_web_app.frontend.default_hostname}"
-      # ]
-      support_credentials = false
-    }
-  }
-
-  app_settings = {
-    # Example: typical Node/Express entry point
-    "WEBSITE_RUN_FROM_PACKAGE" = "1"
-    # Add any backend-specific settings here
-    "NODE_ENV"                 = "production"
-
-    # Basic Configuration
-    "WEBSITES_PORT"                       = "80"
-    "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
-
-    # Application Insights for Monitoring
-    "APPINSIGHTS_INSTRUMENTATIONKEY"        = azurerm_application_insights.main.instrumentation_key
-    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
-
-
-    # SQL Connection String
-    "SQL_CONNECTION_STRING" = local.sql_connection_string
-  }
-
-  # Enable managed identity for secure access
-  identity {
-    type = "SystemAssigned"
-  }
-
-  tags = {
-    Environment    = "School-Safe-GPT"
-    Purpose        = "AI Chat Application"
-    TargetAudience = "Students Under 16"
-  }
-}
-
-
 
 #####################
-# Frontend Web App
+# Web App
 #####################
 
 resource "azurerm_linux_web_app" "frontend" {
