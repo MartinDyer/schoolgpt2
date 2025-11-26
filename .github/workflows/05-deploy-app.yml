@@ -26,19 +26,19 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./app/src
+        working-directory: ./app/Frontend
         run: npm ci
 
       - name: Build app
-        working-directory: ./app/src
+        working-directory: ./app/Frontend
         run: npm run build --if-present
 
       - name: Run tests
-        working-directory: ./app/src
+        working-directory: ./app/Frontend
         run: npm test --if-present
 
       - name: Archive app for deployment
-        working-directory: ./app/src
+        working-directory: ./app/Frontend
         run: |
           zip -r app.zip . -x "*.git*"
 
