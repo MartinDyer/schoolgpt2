@@ -20,6 +20,11 @@ variable "azure_tenant_id" {
   type        = string
 }
 
+variable "azure_subscription_id" {
+  description = "Azure Subscription ID. (Required)"
+  type        = string
+}
+
 # Environment Configuration
 variable "environment" {
   description = "Environment name (e.g., production, staging, development). (Default: production)"

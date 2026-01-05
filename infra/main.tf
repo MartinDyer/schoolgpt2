@@ -2,7 +2,7 @@
 # Provider
 provider "azurerm" {
   features {}
-  subscription_id = "az cognitiveservices account list-deleted -o table"
+  subscription_id = var.azure_subscription_id
 }
 
 resource "random_string" "unique" {
