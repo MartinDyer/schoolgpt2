@@ -40,6 +40,7 @@ jobs:
           echo "ARM_CLIENT_SECRET=${{ fromJson(secrets.AZURE_CREDENTIALS).clientSecret }}" >> $GITHUB_ENV
           echo "ARM_SUBSCRIPTION_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}" >> $GITHUB_ENV
           echo "ARM_TENANT_ID=${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}" >> $GITHUB_ENV
+          echo "TF_VAR_azure_tenant_id=${{ fromJson(secrets.AZURE_CREDENTIALS).tenantId }}" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -52,7 +53,6 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
           terraform apply -auto-approve \
-            -var="azure_tenant_id=${{ secrets.AZURE_TENANT_ID || vars.AZURE_TENANT_ID }}" \
              # Add other vars as needed or rely on .tfvars if they are committed (not recommended for secrets)
 
       - name: Get Terraform Outputs
