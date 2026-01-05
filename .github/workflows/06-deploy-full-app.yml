@@ -46,7 +46,6 @@ jobs:
         run: |
           terraform apply -auto-approve \
             -var="azure_tenant_id=${{ secrets.AZURE_TENANT_ID || vars.AZURE_TENANT_ID }}" \
-            -var="azure_subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
              # Add other vars as needed or rely on .tfvars if they are committed (not recommended for secrets)
 
       - name: Get Terraform Outputs
