@@ -1,16 +1,33 @@
 // src/lib/openai.js
 // Azure OpenAI config + utilities (unchanged behavior)
 
-const axios = require("axios");
+const { DefaultAzureCredential, getBearerTokenProvider } = require("@azure/identity");
 
 const endpointBase = (process.env.AZURE_OPENAI_ENDPOINT || "").replace(/\/$/, "");
 const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
 const apiVersion = process.env.AZURE_OPENAI_API_VERSION || "2025-01-01-preview";
 const chatUrl = `${endpointBase}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
 
-const headers = {
-  "Content-Type": "application/json",
-  "api-key": process.env.AZURE_OPENAI_API_KEY || "",
+// Token provider for Managed Identity (scopes for Cognitive Services)
+const credential = new DefaultAzureCredential();
+const scope = "https://cognitiveservices.azure.com/.default";
+const getAccessToken = getBearerTokenProvider(credential, scope);
+
+// Dynamic headers builder
+const getHeaders = async () => {
+  const common = { "Content-Type": "application/json" };
+  // 1. Prefer API Key if explicitly set (local dev or fallback)
+  if (process.env.AZURE_OPENAI_API_KEY) {
+    return { ...common, "api-key": process.env.AZURE_OPENAI_API_KEY };
+  }
+  // 2. Use Managed Identity Token
+  try {
+    const token = await getAccessToken();
+    return { ...common, "Authorization": `Bearer ${token}` };
+  } catch (e) {
+    console.error("[AUTH] Failed to get Managed Identity token:", e.message);
+    throw e;
+  }
 };
 
 const refusalText =

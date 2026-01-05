@@ -4,6 +4,8 @@ const express = require("express");
 const cors = require("cors");
 const { randomUUID } = require("crypto");
 
+const path = require("path");
+
 // Routers
 const chatRoutes = require("./src/routes/chatRoutes");
 const shareRoutes = require("./src/routes/shareRoutes");
@@ -25,8 +27,16 @@ app.use((req, res, next) => {
 app.use("/api", chatRoutes);
 app.use("/api", shareRoutes);
 
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 // health
 app.get("/health", (_, res) => res.json({ status: "ok" }));
+
+// Catch-all route to serve the React app
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`[BOOT] API listening on http://localhost:${PORT}`);

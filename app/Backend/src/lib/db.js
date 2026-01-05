@@ -4,16 +4,18 @@
 const sql = require("mssql");
 const { SESSIONS, keyFor } = require("./session");
 
-const sqlConfig = {
-  user: process.env.AZURE_SQL_USER,
-  password: process.env.AZURE_SQL_PASS,
-  server: process.env.AZURE_SQL_SERVER,
-  database: process.env.AZURE_SQL_DB,
-  options: {
-    encrypt: true,
-    trustServerCertificate: false,
-  },
-};
+const sqlConfig = process.env.SQL_CONNECTION_STRING
+  ? process.env.SQL_CONNECTION_STRING
+  : {
+    user: process.env.AZURE_SQL_USER,
+    password: process.env.AZURE_SQL_PASS,
+    server: process.env.AZURE_SQL_SERVER,
+    database: process.env.AZURE_SQL_DB,
+    options: {
+      encrypt: true,
+      trustServerCertificate: false,
+    },
+  };
 
 let sqlPool = null;
 

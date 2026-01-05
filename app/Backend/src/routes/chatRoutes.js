@@ -13,7 +13,9 @@ const {
 const {
   axios,
   chatUrl,
-  headers,
+  axios,
+  chatUrl,
+  getHeaders,
   refusalText,
   isContentFilterErr,
   choiceFiltered,
@@ -101,7 +103,7 @@ router.get("/chats/:id", async (req, res) => {
       const stored = JSON.parse(row.messages || "[]");
       SESSIONS.set(keyFor(userId, row.sessionId), { messages: stored, updatedAt: Date.now() });
       console.log(`[SQL] HYDRATE on open: user=${userId} session=${row.sessionId} (${stored.length} msgs)`);
-    } catch {}
+    } catch { }
 
     return res.json({ ok: true, chat: row });
   } catch (err) {
@@ -139,7 +141,11 @@ router.post("/chat", async (req, res) => {
 
     // 1) Enhance (system prompt now comes from src/lib/prompt.js)
     let enhancedPrompt = userPrompt;
-    if (headers["api-key"]) {
+
+    // Fetch headers (Managed Identity or Key)
+    const requestHeaders = await getHeaders();
+
+    if (true) { // Always try to enhance if configured (headers check is now implicit)
       const enhancerMessages = [
         { role: "system", content: enhancerSystemPrompt },
         { role: "user", content: userPrompt },
@@ -148,7 +154,7 @@ router.post("/chat", async (req, res) => {
         const enhanceResp = await axios.post(
           chatUrl,
           { messages: enhancerMessages, temperature: 0.2, max_tokens: 300 },
-          { headers, timeout: 60000 }
+          { headers: requestHeaders, timeout: 60000 }
         );
         const enhChoice = enhanceResp?.data?.choices?.[0];
         if (choiceFiltered(enhChoice)) {
@@ -201,12 +207,12 @@ router.post("/chat", async (req, res) => {
     // 3) Ask model OR fallback
     let reply = "I'm here to help you learn! (demo reply)";
     let usage = {};
-    if (headers["api-key"]) {
+    if (true) {
       try {
         const answerResp = await axios.post(
           chatUrl,
           { messages: answerMessages, temperature: 0.2 },
-          { headers, timeout: 120000 }
+          { headers: requestHeaders, timeout: 120000 }
         );
         const ansChoice = answerResp?.data?.choices?.[0];
         if (choiceFiltered(ansChoice)) {

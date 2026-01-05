@@ -78,6 +78,13 @@ resource "azurerm_cognitive_deployment" "aifoundry_deployment_gpt_4o" {
   }
 }
 
+# 🔐 Grant App Service Access to AI Foundry (Managed Identity)
+resource "azurerm_role_assignment" "webapp_ai" {
+  scope                = azurerm_cognitive_account.ai_foundry.id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = azurerm_linux_web_app.frontend.identity[0].principal_id
+}
+
 
 # Resource Group
 resource "azurerm_resource_group" "main" {
@@ -150,6 +157,16 @@ resource "azurerm_linux_web_app" "frontend" {
 
     # SQL Connection String
     "SQL_CONNECTION_STRING" = local.sql_connection_string
+
+    # 🧠 OpenAI Configuration
+    "AZURE_OPENAI_ENDPOINT"   = azurerm_cognitive_account.ai_foundry.endpoint
+    # "AZURE_OPENAI_API_KEY"  = REMOVED (Using Managed Identity)
+    "AZURE_OPENAI_DEPLOYMENT" = azurerm_cognitive_deployment.aifoundry_deployment_gpt_4o.name
+    "AZURE_OPENAI_API_VERSION" = "2024-08-01-preview"
+
+    # 🔍 Search Configuration (if used, else optional)
+    # "AZURE_SEARCH_ENDPOINT" = ...
+    # "AZURE_SEARCH_KEY"      = ...
   }
 
   # Enable managed identity for secure access
