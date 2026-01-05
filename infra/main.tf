@@ -43,7 +43,7 @@ resource "azurerm_cognitive_account" "ai_foundry" {
   sku_name = "S0"
 
   # required for stateful development in Foundry including agent service
-  custom_subdomain_name = "School-Safe-GPT-AIF-${random_string.unique.result}"
+  custom_subdomain_name = "school-safe-gpt-aif-${random_string.unique.result}"
 
   tags = {
     Acceptance = "Test"
