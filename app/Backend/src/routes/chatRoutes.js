@@ -259,6 +259,7 @@ router.post("/chat", async (req, res) => {
           return replyBlockedAndRecord(res, reqId, sessKey, "ANSWER", err.response?.data, null, enhancedPrompt);
         }
         console.error(`[${ts()}] [${reqId}] ANSWER ERROR:`, err?.response?.data || err.message);
+        console.error(`[${ts()}] [${reqId}] FULL ERROR DETAILS:`, JSON.stringify({ status: err?.response?.status, statusText: err?.response?.statusText, data: err?.response?.data, message: err?.message, code: err?.code }));
         reply = "I couldn’t answer that. Please try a different question or rephrase politely.";
       }
     }
