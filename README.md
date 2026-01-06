@@ -1,186 +1,349 @@
-# 🏫 SchoolGPT - Professional AI Assistant for Schools
+# SchoolGPT - AI-Powered Educational Assistant
 
-**Enterprise-grade, school-safe AI assistant with 100% automated deployment**
+A safe, educational AI chatbot designed specifically for students, deployed on Azure with enterprise-grade security and scalability.
 
-[![Deploy to Azure](https://img.shields.io/badge/Deploy%20to-Azure-blue?style=for-the-badge&logo=microsoft-azure)](https://portal.azure.com)
-[![Terraform](https://img.shields.io/badge/Infrastructure-Terraform-purple?style=for-the-badge&logo=terraform)](https://www.terraform.io/)
-[![GitHub Actions](https://img.shields.io/badge/CI/CD-GitHub%20Actions-green?style=for-the-badge&logo=github-actions)](https://github.com/features/actions)
+## 🚀 Live Application
 
----
+**Production URL**: https://school-safe-gpt-fe-1234.azurewebsites.net
 
-## 🎯 What is SchoolGPT?
-
-**SchoolGPT** is a complete, production-ready AI assistant template specifically designed for educational institutions. Built with Azure AI Foundry and enhanced with school-specific safety features, content filtering, and compliance monitoring.
-
-### ✨ Key Features
-
-- 🧠 **Azure AI Foundry Integration** - Latest GPT models optimized for education
-- 🔒 **Enterprise Security** - High-level content filtering and access controls  
-- 📚 **Educational Focus** - Age-appropriate responses for students under 16
-- 🏫 **Multi-School Ready** - Isolated deployments for each school
-- 📊 **Compliance & Auditing** - Complete conversation logging and monitoring
-- 🚨 **Real-time Monitoring** - Instant alerts for policy violations
-- 🔐 **Azure AD Integration** - Secure, school-only authentication
-- ⚡ **5-Minute Deployment** - Fully automated setup process
+**Status**: ✅ Fully Operational
 
 ---
 
-## 🏗️ Architecture
+## Features
+
+- 🤖 **AI-Powered Chat**: Powered by Azure OpenAI (gpt-4.1-mini)
+- 💾 **Chat History**: Persistent storage with Azure SQL Database
+- 🔐 **Microsoft Authentication**: Secure student login via Azure AD
+- 🛡️ **Content Filtering**: Built-in AI safety for educational use
+- 📱 **Responsive Design**: Works on desktop, tablet, and mobile
+
+---
+
+## Architecture
 
 ### Technology Stack
-- **Frontend**: React.js with TypeScript
-- **Backend**: Python Flask with Azure integration  
-- **AI Engine**: Azure AI Foundry (OpenAI GPT models)
-- **Database**: Azure SQL with automated backups
-- **Infrastructure**: Terraform with Azure provider
-- **CI/CD**: GitHub Actions with automated testing
-- **Monitoring**: Application Insights with custom alerts
-- **Security**: Azure Key Vault + Entra ID authentication
 
-### What Gets Created
-For **"Lincoln Elementary School"**:
+**Frontend:**
+- React 18 with TypeScript
+- Vite (build tool)
+- MSAL Browser (Microsoft authentication)
+- Deployed as static files
+
+**Backend:**
+- Node.js 20 (LTS)
+- Express 5
+- Azure OpenAI SDK
+- MS SQL driver with Managed Identity
+
+**Infrastructure:**
+- Azure App Service (Linux)
+- Azure OpenAI (ChatGPT-Safe resource)
+- Azure SQL Database
+- Azure AD (for authentication)
+- Terraform (Infrastructure as Code)
+
+### Security
+
+- ✅ **Managed Identity**: No hardcoded credentials
+- ✅ **Content Filtering**: Azure OpenAI safety features
+- ✅ **SQL Injection Protection**: Parameterized queries
+- ✅ **HTTPS Only**: Enforced SSL/TLS
+- ✅ **Authentication**: Microsoft Azure AD
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+ (LTS)
+- npm or yarn
+- Azure subscription (for deployment)
+- Azure CLI (for deployment)
+
+### Local Development
+
+#### 1. Clone the Repository
+
+```bash
+git clone https://github.com/sapience-ext/schoolgpt.git
+cd schoolgpt
 ```
-🏫 Resource Group: lincolnelementary-production-rg
-🧠 AI Foundry: lincolnelementaryaifoundryabc123  
-🌐 Web App: lincolnelementarywebappabc123
-📦 Storage: lincolnelementarytfstatedef456
-🐳 Registry: lincolnelementaryacrabc123
-🗄️ Database: lincolnelementarysqlsrvabc123
-🔐 Key Vault: lincolnelementarykvaabc123
+
+#### 2. Set Up Backend
+
+```bash
+cd app/Backend
+npm install
+cp .env.example .env
+# Edit .env with your Azure credentials
+npm start
+```
+
+Backend will run on `http://localhost:8080`
+
+#### 3. Set Up Frontend
+
+```bash
+cd app/Frontend
+npm install
+npm run dev
+```
+
+Frontend will run on `http://localhost:5173`
+
+### Environment Variables
+
+#### Backend (`.env`)
+```env
+# Azure OpenAI
+AZURE_OPENAI_ENDPOINT=https://chatgpt-safe.cognitiveservices.azure.com/
+AZURE_OPENAI_DEPLOYMENT=Test-gpt-4.1-mini
+AZURE_OPENAI_API_VERSION=2024-08-01-preview
+
+# Database
+SQL_SERVER=school1sqlsrve2b9.database.windows.net
+SQL_DATABASE=school1db
+SQL_USER=<username>
+SQL_PASSWORD=<password>
+
+# App
+PORT=8080
+```
+
+#### Frontend (`.env`)
+```env
+VITE_API_BASE=http://localhost:8080
+VITE_AZURE_CLIENT_ID=abeede17-553a-4a0e-b2e2-ca619305a0e3
+VITE_AZURE_TENANT_ID=<your-tenant-id>
 ```
 
 ---
 
-## 🔒 Safety & Compliance
+## Deployment
 
-### Content Safety
-- ✅ **HIGH Content Filtering** - Blocks inappropriate content automatically
-- ✅ **Age-Appropriate Responses** - Optimized for students under 16  
-- ✅ **Educational Focus** - Responses tailored for learning environments
-- ✅ **Real-time Monitoring** - Instant alerts for policy violations
+### Automated Deployment
 
-### Security Features
-- ✅ **Data Encryption** - All data encrypted at rest and in transit
-- ✅ **Access Controls** - Azure AD integration with school domains
-- ✅ **Audit Logging** - Complete conversation history for compliance
-- ✅ **GDPR/COPPA Compliant** - Meets educational privacy standards
+The project uses GitHub Actions for CI/CD:
 
----
+```bash
+# Trigger deployment
+gh workflow run "06- Deploy Full App" --ref main
 
-## 💰 Cost Estimates
+# Monitor deployment
+gh run watch
+```
 
-### Small School (100-500 students)
-- **Azure AI Foundry**: $50-100/month
-- **App Service**: $55/month  
-- **SQL Database**: $20/month
-- **Storage & Monitoring**: $10/month
-- **Total**: ~$135-185/month
+### Manual Deployment
 
-### Medium School (500-2000 students)  
-- **Azure AI Foundry**: $150-300/month
-- **App Service**: $110/month
-- **SQL Database**: $40/month  
-- **Storage & Monitoring**: $20/month
-- **Total**: ~$320-470/month
-
-*Costs scale automatically with usage*
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions and troubleshooting.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 schoolgpt/
-├── .github/workflows/           # Automated CI/CD pipelines
-│   ├── 00-setup-backend.yml    # Backend storage setup
-│   ├── 01-deploy-infrastructure.yml  # Infrastructure deployment  
-│   ├── 02-destroy-infrastructure.yml # Resource cleanup
-│   ├── 03-deploy-application.yml     # Application deployment
-│   └── 99-import-existing-resources.yml  # State import
-├── infra/                       # Terraform infrastructure
-│   ├── main.tf                 # Main infrastructure definition
-│   ├── variables.tf            # Configuration variables  
-│   ├── terraform.tfvars        # Environment-specific values
-│   └── README.md               # Infrastructure documentation
-├── sample-app-aoai-chatGPT/    # Application source code
-│   ├── frontend/               # React.js frontend
-│   ├── backend/                # Python Flask backend
-│   └── WebApp.Dockerfile       # Container configuration
-├── DEPLOYMENT_GUIDE.md         # Complete setup instructions
+├── app/
+│   ├── Backend/                 # Node.js Express API
+│   │   ├── src/
+│   │   │   ├── lib/            # Utilities (OpenAI, DB, etc.)
+│   │   │   └── routes/         # API endpoints
+│   │   ├── server.js           # Entry point
+│   │   └── package.json
+│   │
+│   └── Frontend/                # React application
+│       ├── src/
+│       │   ├── components/     # React components
+│       │   ├── pages/          # Page components
+│       │   └── main.tsx        # Entry point
+│       ├── index.html
+│       └── package.json
+│
+├── infra/                       # Terraform configuration
+│   ├── main.tf                 # Azure resources
+│   ├── variables.tf
+│   └── backend.tf              # State management
+│
+├── .github/workflows/          # CI/CD pipelines
+│   ├── 01-setup-backend.yml
+│   ├── 04-deploy-infrastructure.yml
+│   └── 06-deploy-full-app.yml
+│
+├── DEPLOYMENT.md               # Deployment guide
 └── README.md                   # This file
 ```
 
 ---
 
-## 🚀 Quick Start
+## API Reference
 
-### For Schools (5 Minutes Total)
+### Health Check
+```http
+GET /health
+```
 
-1. **Fork this repository** 
-2. **Add Azure credentials** to GitHub Secrets
-3. **Configure terraform.tfvars** with your school details
-4. **Run deployment workflows** - fully automated
+**Response:**
+```json
+{"status": "ok"}
+```
 
-**That's it!** Your school gets a completely unique, isolated AI assistant.
+### Send Chat Message
+```http
+POST /api/chat
+Content-Type: application/json
 
-### For Developers
+{
+  "message": "What is photosynthesis?",
+  "userId": "student@school.edu",
+  "sessionId": "unique-session-id"
+}
+```
 
-1. **Clone repository**
-2. **Review infrastructure** in `/infra` folder  
-3. **Customize application** in `/sample-app-aoai-chatGPT`
-4. **Deploy via GitHub Actions**
+**Response:**
+```json
+{
+  "ok": true,
+  "requestId": "uuid",
+  "reply": "Photosynthesis is the process...",
+  "enhancedPrompt": "Can you explain what photosynthesis is?",
+  "usage": {
+    "prompt_tokens": 45,
+    "completion_tokens": 120,
+    "total_tokens": 165
+  },
+  "latencyMs": 1250
+}
+```
 
----
+### Get Chat History
+```http
+GET /api/chats?userId=student@school.edu
+```
 
-## 📖 Complete Setup Instructions
+**Response:**
+```json
+{
+  "ok": true,
+  "items": [
+    {
+      "id": "uuid",
+      "title": "Science Questions",
+      "preview": "What is photosynthesis? Photosynthesis is...",
+      "messageCount": 5,
+      "updatedAt": "2026-01-07T10:30:00.000Z"
+    }
+  ]
+}
+```
 
-**👉 See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed step-by-step instructions**
-
-The deployment guide covers:
-- ✅ Prerequisites and setup
-- ✅ Azure credential configuration  
-- ✅ terraform.tfvars configuration
-- ✅ CI/CD pipeline usage
-- ✅ Troubleshooting and support
-
----
-
-## 🔧 CI/CD Workflows
-
-This project includes 5 automated workflows:
-
-1. **🔧 Setup Backend Storage** - Creates Terraform remote state storage
-2. **🚀 Deploy Infrastructure** - Creates all Azure resources  
-3. **📱 Deploy Application** - Builds and deploys the web application
-4. **🔄 Import Existing Resources** - Imports existing Azure resources to Terraform state
-5. **🗑️ Destroy Infrastructure** - Safely removes all resources
-
----
-
-## 🌟 Professional Features
-
-### Multi-Tenant Architecture
-- **Isolated Deployments** - Each school gets independent resources
-- **Automated Provisioning** - 5-minute setup per school
-- **Cost Attribution** - Per-school billing and analytics
-- **Scalable Design** - Supports unlimited schools
-
-### Monitoring & Analytics  
-- **Usage Analytics** - Student interaction patterns
-- **Content Monitoring** - Real-time content filter alerts  
-- **Performance Metrics** - Response times and availability
-- **Cost Tracking** - Azure resource utilization
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+For complete API documentation, see the backend [routes directory](./app/Backend/src/routes/).
 
 ---
 
-## 🚀 Ready to Deploy?
+## Configuration Details
 
-**[📖 Read the Complete Deployment Guide →](DEPLOYMENT_GUIDE.md)**
+### Key Files
 
-**Professional. Secure. Educational. Ready for production.** 
+#### Backend Configuration
+- [`server.js`](./app/Backend/server.js) - Express server setup, static file serving
+- [`openai.js`](./app/Backend/src/lib/openai.js) - Azure OpenAI integration
+- [`chatRoutes.js`](./app/Backend/src/routes/chatRoutes.js) - Chat API logic
+
+#### Frontend Configuration
+- [`Index.tsx`](./app/Frontend/src/pages/Index.tsx) - Main application component
+- [`.env`](./app/Frontend/.env) - Environment variables
+- [`vite.config.ts`](./app/Frontend/vite.config.ts) - Build configuration
+
+#### Infrastructure
+- [`main.tf`](./infra/main.tf) - Azure resources (App Service, SQL, AI)
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue: Chat returns "I couldn't answer that"**
+- Check Azure OpenAI rate limits
+- Verify Managed Identity has permission
+- Review logs: `az webapp log tail --name School-Safe-GPT-FE-1234`
+
+**Issue: Login redirects to localhost**
+- Ensure `.env` has no hardcoded redirect URIs
+- Add production URL to Azure AD App Registration
+
+**Issue: SQL connection errors**
+- Verify firewall rule allows Azure Services (0.0.0.0)
+- Check connection string in App Settings
+
+For detailed troubleshooting, see [DEPLOYMENT.md](./DEPLOYMENT.md#troubleshooting).
+
+---
+
+## Development Workflow
+
+### Making Changes
+
+1. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature
+   ```
+
+2. **Make your changes**
+   - Frontend: Edit files in `app/Frontend/src/`
+   - Backend: Edit files in `app/Backend/src/`
+   - Infrastructure: Edit `infra/main.tf`
+
+3. **Test locally**
+   ```bash
+   # Backend
+   cd app/Backend && npm test
+
+   # Frontend
+   cd app/Frontend && npm run dev
+   ```
+
+4. **Commit and push**
+   ```bash
+   git add .
+   git commit -m "feat: your feature description"
+   git push origin feature/your-feature
+   ```
+
+5. **Deploy to Azure**
+   - Merge to `main` branch
+   - GitHub Actions will automatically deploy
+
+---
+
+## Contributing
+
+This is a client project. For issues or feature requests, contact the development team.
+
+---
+
+## License
+
+Proprietary - All rights reserved
+
+---
+
+## Support
+
+**Developer**: Muhammad Umair Ali  
+**Email**: mumairali@outlook.com  
+**Deployed**: 2026-01-07
+
+For deployment issues, see [DEPLOYMENT.md](./DEPLOYMENT.md)  
+For technical walkthrough, see [walkthrough.md](./walkthrough.md)
+
+---
+
+## Acknowledgments
+
+- Azure OpenAI Service
+- Microsoft Azure Platform
+- React and Vite communities
+- Express.js framework
