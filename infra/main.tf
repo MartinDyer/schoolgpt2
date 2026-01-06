@@ -136,7 +136,6 @@ resource "azurerm_linux_web_app" "frontend" {
     application_stack {
       node_version = "18-lts"
     }
-    app_command_line = "node server.js"
   }
 
   app_settings = {
