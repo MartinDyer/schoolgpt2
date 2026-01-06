@@ -13,6 +13,12 @@ const shareRoutes = require("./src/routes/shareRoutes");
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+console.log("------------------------------------------------------------------");
+console.log(`[BOOT] Starting Server on PORT ${PORT}`);
+console.log(`[BOOT] Current Directory: ${process.cwd()}`);
+console.log(`[BOOT] Environment Keys: ${Object.keys(process.env).join(", ")}`);
+console.log("------------------------------------------------------------------");
+
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
