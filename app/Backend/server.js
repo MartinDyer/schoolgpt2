@@ -1,3 +1,8 @@
+console.log("------------------------------------------------------------------");
+console.log(`[BOOT] STARTING NODE PROCESS`);
+console.log(`[BOOT] Time: ${new Date().toISOString()}`);
+console.log("------------------------------------------------------------------");
+
 // /server.js
 require("dotenv").config();
 const express = require("express");
@@ -12,12 +17,6 @@ const shareRoutes = require("./src/routes/shareRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-
-console.log("------------------------------------------------------------------");
-console.log(`[BOOT] Starting Server on PORT ${PORT}`);
-console.log(`[BOOT] Current Directory: ${process.cwd()}`);
-console.log(`[BOOT] Environment Keys: ${Object.keys(process.env).join(", ")}`);
-console.log("------------------------------------------------------------------");
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
