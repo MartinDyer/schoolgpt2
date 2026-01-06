@@ -23,7 +23,8 @@ type ChatSummary = {
 };
 
 // Point to your Node backend. Use .env (VITE_API_BASE) in prod.
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
+// Use nullish coalescing or explicit check to allow empty string (relative path)
+const API_BASE = import.meta.env.VITE_API_BASE !== undefined ? import.meta.env.VITE_API_BASE : "http://localhost:8080";
 
 // -------- session helpers (frontend-only cache) --------
 const makeSessionId = () =>
@@ -73,7 +74,7 @@ const Index = () => {
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastSavedRef = useRef<string>(""); // payload hash to avoid redundant saves
-  const shareOnceRef = useRef(false);  
+  const shareOnceRef = useRef(false);
   const { toast } = useToast();
 
   // === UTIL ===
@@ -273,63 +274,63 @@ const Index = () => {
 
   // ---- main send handler ----
   // ---- main send handler ----
-const handleSendMessage = async (message: string) => {
-  if (!isLoggedIn) {
-    setShowLoginDialog(true);
-    return;
-  }
-
-  const text = (message || "").trim();
-  if (!text) return;
-
-  // 1) show user message instantly
-  pushUser(text);
-  setIsGenerating(true);
-
-  try {
-    console.log("[FRONTEND] sending to backend:", { text, sessionId, userId });
-
-    const resp = await fetch(`${API_BASE}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, userId, sessionId }),
-    });
-
-    const data = await resp.json().catch(() => ({} as any));
-
-    if (!resp.ok || data?.ok === false) {
-      console.error("[FRONTEND] backend error (non-OK):", data);
-      const contentFilter =
-        data?.error_code === "content_filter" ||
-        /content[_\s-]?filter/i.test(data?.error_message || "");
-
-      const fallback = contentFilter
-        ? "I’m unable to assist you with that request due to safety guidelines. I can help with safer, educational alternatives."
-        : data?.error_message ||
-          data?.detail?.error?.message ||
-          "I couldn’t answer that right now. Please try a different question.";
-
-      pushAssistant(fallback);
-      setIsGenerating(false); // hide spinner immediately on error
+  const handleSendMessage = async (message: string) => {
+    if (!isLoggedIn) {
+      setShowLoginDialog(true);
       return;
     }
 
-    const replyText =
-      data?.reply ||
-      "I couldn’t produce a response. Please try asking in a different way.";
-    pushAssistant(replyText);
+    const text = (message || "").trim();
+    if (!text) return;
 
-    // ✅ Hide spinner right away (don’t wait for save)
-    setIsGenerating(false);
+    // 1) show user message instantly
+    pushUser(text);
+    setIsGenerating(true);
 
-    // ✅ Fire-and-forget save; no UI delay
-    void saveCurrentChat("auto-after-reply");
-  } catch (e: any) {
-    console.error("[FRONTEND] fetch failed:", e);
-    pushAssistant("Network issue. Please check your connection and try again.");
-    setIsGenerating(false); // also hide on catch
-  }
-};
+    try {
+      console.log("[FRONTEND] sending to backend:", { text, sessionId, userId });
+
+      const resp = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, userId, sessionId }),
+      });
+
+      const data = await resp.json().catch(() => ({} as any));
+
+      if (!resp.ok || data?.ok === false) {
+        console.error("[FRONTEND] backend error (non-OK):", data);
+        const contentFilter =
+          data?.error_code === "content_filter" ||
+          /content[_\s-]?filter/i.test(data?.error_message || "");
+
+        const fallback = contentFilter
+          ? "I’m unable to assist you with that request due to safety guidelines. I can help with safer, educational alternatives."
+          : data?.error_message ||
+          data?.detail?.error?.message ||
+          "I couldn’t answer that right now. Please try a different question.";
+
+        pushAssistant(fallback);
+        setIsGenerating(false); // hide spinner immediately on error
+        return;
+      }
+
+      const replyText =
+        data?.reply ||
+        "I couldn’t produce a response. Please try asking in a different way.";
+      pushAssistant(replyText);
+
+      // ✅ Hide spinner right away (don’t wait for save)
+      setIsGenerating(false);
+
+      // ✅ Fire-and-forget save; no UI delay
+      void saveCurrentChat("auto-after-reply");
+    } catch (e: any) {
+      console.error("[FRONTEND] fetch failed:", e);
+      pushAssistant("Network issue. Please check your connection and try again.");
+      setIsGenerating(false); // also hide on catch
+    }
+  };
 
 
   // auth callbacks
@@ -478,8 +479,8 @@ const handleSendMessage = async (message: string) => {
       return;
     }
 
-  if (shareOnceRef.current) return;
-  shareOnceRef.current = true;
+    if (shareOnceRef.current) return;
+    shareOnceRef.current = true;
 
     (async () => {
       try {
