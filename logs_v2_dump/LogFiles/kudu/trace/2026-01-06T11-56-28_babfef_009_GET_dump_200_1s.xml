@@ -1,0 +1,4 @@
+<step title="Incoming Request" date="2026-01-06T11:56:28.578" instance="babfef" url="/dump" method="GET" type="request" pid="768,1,64" Host="school-safe-gpt-fe-1234.scm.azurewebsites.net" User-Agent="AZURECLI/2.74.0 (HOMEBREW)" Accept-Encoding="identity" Authorization="Bas..." x-ms-client-request-id="b865546e-eaf6-11f0-a450-8a41231c034c" X-ARR-LOG-ID="b865546e-eaf6-11f0-a450-8a41231c034c" CLIENT-IP="110.93.227.49:63398" X-SITE-DEPLOYMENT-ID="School-Safe-GPT-FE-1234" WAS-DEFAULT-HOSTNAME="school-safe-gpt-fe-1234.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/dump" X-Client-IP="110.93.227.49" X-Client-Port="63398" >
+  <step title="Cleanup Xml Logs" date="2026-01-06T11:56:28.612" /><!-- duration: 8ms -->
+  <step title="Outgoing response" date="2026-01-06T11:56:29.322" type="response" statusCode="200" statusText="OK" /><!-- duration: 4ms -->
+</step><!-- duration: 750ms -->

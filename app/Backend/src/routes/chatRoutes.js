@@ -13,8 +13,6 @@ const {
 const {
   axios,
   chatUrl,
-  axios,
-  chatUrl,
   getHeaders,
   refusalText,
   isContentFilterErr,

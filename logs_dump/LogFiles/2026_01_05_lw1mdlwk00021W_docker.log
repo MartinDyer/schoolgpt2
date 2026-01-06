@@ -1,0 +1,219 @@
+2026-01-05T23:37:21.1053302Z Container start method called.
+2026-01-05T23:37:21.1066910Z Establishing network.
+2026-01-05T23:37:21.1068534Z Pulling image: appsvc/node:18-lts_20250724.2.tuxprod.
+2026-01-05T23:37:47.7378661Z Image appsvc/node:18-lts_20250724.2.tuxprod is pulled from registry 10.1.0.5:13209
+2026-01-05T23:37:47.7382537Z Container is starting.
+2026-01-05T23:37:47.7459088Z Establishing user namespace if not established already.
+2026-01-05T23:37:47.7463580Z Establishing network if not established already.
+2026-01-05T23:37:47.7468176Z Mounting volumes.
+2026-01-05T23:37:47.7471311Z Nested mountpoint 
+2026-01-05T23:37:47.7902610Z Nested mountpoint volatile/logs
+2026-01-05T23:37:47.7987243Z Nested mountpoint 
+2026-01-05T23:37:47.8686400Z Nested mountpoint 
+2026-01-05T23:37:47.8701565Z Nested mountpoint 
+2026-01-05T23:37:48.0760619Z Creating container.
+2026-01-05T23:37:48.0761664Z Creating pipes for streaming container io.
+2026-01-05T23:37:48.0762425Z Creating stdout named pipe at /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stdout_715ff488b3014a63958832a1f7c10537.
+2026-01-05T23:37:48.0764195Z Successfully created stdout named pipe at: /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stdout_715ff488b3014a63958832a1f7c10537.
+2026-01-05T23:37:48.0764980Z Opening named pipe /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stdout_715ff488b3014a63958832a1f7c10537 for reading in non-blocking mode.
+2026-01-05T23:37:48.0811739Z Successfully opened named pipe: /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stdout_715ff488b3014a63958832a1f7c10537.
+2026-01-05T23:37:48.0813461Z Successfully removed non-blocking flag from /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stdout_715ff488b3014a63958832a1f7c10537.
+2026-01-05T23:37:48.0814498Z Creating stderr named pipe at /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stderr_dff3b8a46549404e9874b2171c40740e.
+2026-01-05T23:37:48.0815826Z Successfully created stderr named pipe at: /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stderr_dff3b8a46549404e9874b2171c40740e.
+2026-01-05T23:37:48.0816640Z Opening named pipe /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stderr_dff3b8a46549404e9874b2171c40740e for reading in non-blocking mode.
+2026-01-05T23:37:48.0817551Z Successfully opened named pipe: /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stderr_dff3b8a46549404e9874b2171c40740e.
+2026-01-05T23:37:48.0818261Z Successfully removed non-blocking flag from /podr/container/pipe/aabff793d761_school-safe-gpt-fe-1234/stderr_dff3b8a46549404e9874b2171c40740e.
+2026-01-05T23:37:48.0819175Z Creating container with image: appsvc/node:18-lts_20250724.2.tuxprod from registry: 10.1.0.5:13209 and fully qualified image name: 10.1.0.5:13209/appsvc/node:18-lts_20250724.2.tuxprod
+2026-01-05T23:37:48.5136345Z Starting container: aabff793d761_school-safe-gpt-fe-1234.
+2026-01-05T23:37:48.6226510Z Starting watchers and probes.
+2026-01-05T23:37:48.6619274Z Starting metrics collection.
+2026-01-05T23:37:48.6634986Z Container is running.
+2026-01-05T23:37:48.7137787Z Container start method finished after 27607 ms.
+2026-01-05T23:37:56.8681013Z Site startup probe succeeded after 8.0924741 seconds.
+2026-01-05T23:37:57.0802534Z Site started.
+2026-01-05T23:37:57.3196821Z Site is running with patch version NODE 18.20.8
+2026-01-05T23:48:50.4678344Z Container start method called.
+2026-01-05T23:48:50.4680153Z Establishing network.
+2026-01-05T23:48:50.4681227Z Pulling image: appsvc/node:18-lts_20250724.2.tuxprod.
+2026-01-05T23:48:50.7622962Z Image appsvc/node:18-lts_20250724.2.tuxprod is pulled from registry 10.1.0.6:13209
+2026-01-05T23:48:50.7706881Z Container is starting.
+2026-01-05T23:48:50.7718913Z Establishing user namespace if not established already.
+2026-01-05T23:48:50.7799200Z Establishing network if not established already.
+2026-01-05T23:48:50.8010792Z Mounting volumes.
+2026-01-05T23:48:50.8022743Z Nested mountpoint site/wwwroot
+2026-01-05T23:48:50.8178126Z Nested mountpoint volatile/logs
+2026-01-05T23:48:50.8562147Z Nested mountpoint 
+2026-01-05T23:48:50.8567924Z Nested mountpoint 
+2026-01-05T23:48:51.0153933Z Nested mountpoint 
+2026-01-05T23:48:51.0279111Z Nested mountpoint 
+2026-01-05T23:48:52.0544868Z Creating container.
+2026-01-05T23:48:52.0547760Z Creating pipes for streaming container io.
+2026-01-05T23:48:52.0548626Z Creating stdout named pipe at /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stdout_ce179f79ab1d461896b38f4abfa2f7f9.
+2026-01-05T23:48:52.0550349Z Successfully created stdout named pipe at: /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stdout_ce179f79ab1d461896b38f4abfa2f7f9.
+2026-01-05T23:48:52.0551082Z Opening named pipe /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stdout_ce179f79ab1d461896b38f4abfa2f7f9 for reading in non-blocking mode.
+2026-01-05T23:48:52.0551957Z Successfully opened named pipe: /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stdout_ce179f79ab1d461896b38f4abfa2f7f9.
+2026-01-05T23:48:52.0552894Z Successfully removed non-blocking flag from /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stdout_ce179f79ab1d461896b38f4abfa2f7f9.
+2026-01-05T23:48:52.0553713Z Creating stderr named pipe at /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stderr_552ffa8a76ab4415892556a8b5690d01.
+2026-01-05T23:48:52.0554782Z Successfully created stderr named pipe at: /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stderr_552ffa8a76ab4415892556a8b5690d01.
+2026-01-05T23:48:52.0555492Z Opening named pipe /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stderr_552ffa8a76ab4415892556a8b5690d01 for reading in non-blocking mode.
+2026-01-05T23:48:52.0556285Z Successfully opened named pipe: /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stderr_552ffa8a76ab4415892556a8b5690d01.
+2026-01-05T23:48:52.0556941Z Successfully removed non-blocking flag from /podr/container/pipe/58c5d045c8b8_school-safe-gpt-fe-1234/stderr_552ffa8a76ab4415892556a8b5690d01.
+2026-01-05T23:48:52.0557794Z Creating container with image: appsvc/node:18-lts_20250724.2.tuxprod from registry: 10.1.0.6:13209 and fully qualified image name: 10.1.0.6:13209/appsvc/node:18-lts_20250724.2.tuxprod
+2026-01-05T23:48:52.4531492Z Starting container: 58c5d045c8b8_school-safe-gpt-fe-1234.
+2026-01-05T23:48:52.4894431Z Starting watchers and probes.
+2026-01-05T23:48:52.4978542Z Starting metrics collection.
+2026-01-05T23:48:52.4989746Z Container is running.
+2026-01-05T23:48:52.5587820Z Container start method finished after 2090 ms.
+2026-01-05T23:49:03.6693161Z Container has finished running with exit code: 1.
+2026-01-05T23:49:03.6904699Z Container is terminating. Grace period: 5 seconds.
+2026-01-05T23:49:03.7027838Z Stop and delete container. Retry count = 0
+2026-01-05T23:49:03.7037260Z Stopping container: 58c5d045c8b8_school-safe-gpt-fe-1234.
+2026-01-05T23:49:03.7811742Z Deleting container: 58c5d045c8b8_school-safe-gpt-fe-1234. Retry count = 0
+2026-01-05T23:49:03.9317602Z Container spec TerminationMessagePolicy  path 
+2026-01-05T23:49:03.9338793Z Container is terminated. Total time elapsed: 242 ms.
+2026-01-05T23:49:03.9340146Z Site container: school-safe-gpt-fe-1234 terminated during site startup.
+2026-01-05T23:49:03.9717187Z Site startup probe failed after 11.4053299 seconds.
+2026-01-05T23:49:04.1474129Z Failed to start site. Revert by stopping site.
+2026-01-05T23:49:04.1732997Z Site: school-safe-gpt-fe-1234 stopped.
+2026-01-05T23:49:25.4330915Z Container is terminating. Grace period: 5 seconds.
+2026-01-05T23:49:25.4432208Z Stop and delete container. Retry count = 0
+2026-01-05T23:49:25.4433352Z Stopping container: aabff793d761_school-safe-gpt-fe-1234.
+2026-01-05T23:49:30.5269835Z Deleting container: aabff793d761_school-safe-gpt-fe-1234. Retry count = 0
+2026-01-05T23:49:30.6544973Z Container spec TerminationMessagePolicy  path 
+2026-01-05T23:49:30.6550017Z Container is terminated. Total time elapsed: 5221 ms.
+2026-01-05T23:49:30.6551164Z Site: school-safe-gpt-fe-1234 stopped.
+2026-01-05T23:49:04.7643986Z Site container: school-safe-gpt-fe-1234_managedIdentity terminated during site startup.
+2026-01-05T23:49:39.0510849Z Container start method called.
+2026-01-05T23:49:39.0512575Z Establishing network.
+2026-01-05T23:49:39.0513622Z Pulling image: appsvc/node:18-lts_20250724.2.tuxprod.
+2026-01-05T23:49:39.1709455Z Container is starting.
+2026-01-05T23:49:39.1711082Z Establishing user namespace if not established already.
+2026-01-05T23:49:39.1712287Z Establishing network if not established already.
+2026-01-05T23:49:39.1713369Z Mounting volumes.
+2026-01-05T23:49:39.1714883Z Nested mountpoint site/wwwroot
+2026-01-05T23:49:39.1794711Z Nested mountpoint volatile/logs
+2026-01-05T23:49:39.2096729Z Nested mountpoint 
+2026-01-05T23:49:39.2103041Z Nested mountpoint 
+2026-01-05T23:49:39.2715508Z Nested mountpoint 
+2026-01-05T23:49:39.2793817Z Nested mountpoint 
+2026-01-05T23:49:39.9579811Z Creating container.
+2026-01-05T23:49:39.9580816Z Creating pipes for streaming container io.
+2026-01-05T23:49:39.9581654Z Creating stdout named pipe at /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stdout_6045eaaf50814aa8b7036ae679934554.
+2026-01-05T23:49:39.9583294Z Successfully created stdout named pipe at: /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stdout_6045eaaf50814aa8b7036ae679934554.
+2026-01-05T23:49:39.9584070Z Opening named pipe /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stdout_6045eaaf50814aa8b7036ae679934554 for reading in non-blocking mode.
+2026-01-05T23:49:39.9584972Z Successfully opened named pipe: /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stdout_6045eaaf50814aa8b7036ae679934554.
+2026-01-05T23:49:39.9585678Z Successfully removed non-blocking flag from /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stdout_6045eaaf50814aa8b7036ae679934554.
+2026-01-05T23:49:39.9586902Z Creating stderr named pipe at /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stderr_220aaec2442c43bbb783565e9503d577.
+2026-01-05T23:49:39.9588101Z Successfully created stderr named pipe at: /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stderr_220aaec2442c43bbb783565e9503d577.
+2026-01-05T23:49:39.9588799Z Opening named pipe /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stderr_220aaec2442c43bbb783565e9503d577 for reading in non-blocking mode.
+2026-01-05T23:49:39.9589668Z Successfully opened named pipe: /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stderr_220aaec2442c43bbb783565e9503d577.
+2026-01-05T23:49:39.9590359Z Successfully removed non-blocking flag from /podr/container/pipe/a7eb8fee4263_school-safe-gpt-fe-1234/stderr_220aaec2442c43bbb783565e9503d577.
+2026-01-05T23:49:39.9591181Z Creating container with image: appsvc/node:18-lts_20250724.2.tuxprod from registry: 10.1.0.6:13209 and fully qualified image name: 10.1.0.6:13209/appsvc/node:18-lts_20250724.2.tuxprod
+2026-01-05T23:49:40.2559779Z Starting container: a7eb8fee4263_school-safe-gpt-fe-1234.
+2026-01-05T23:49:40.2936733Z Starting watchers and probes.
+2026-01-05T23:49:40.2948716Z Starting metrics collection.
+2026-01-05T23:49:40.3113590Z Container is running.
+2026-01-05T23:49:40.3522649Z Container start method finished after 1301 ms.
+2026-01-05T23:49:48.8977101Z Container has finished running with exit code: 1.
+2026-01-05T23:49:48.8978860Z Container is terminating. Grace period: 5 seconds.
+2026-01-05T23:49:48.8981747Z Stop and delete container. Retry count = 0
+2026-01-05T23:49:48.8982559Z Stopping container: a7eb8fee4263_school-safe-gpt-fe-1234.
+2026-01-05T23:49:48.9374021Z Deleting container: a7eb8fee4263_school-safe-gpt-fe-1234. Retry count = 0
+2026-01-05T23:49:49.0585668Z Container spec TerminationMessagePolicy  path 
+2026-01-05T23:49:49.0592756Z Container is terminated. Total time elapsed: 160 ms.
+2026-01-05T23:49:49.0598887Z Site container: school-safe-gpt-fe-1234 terminated during site startup.
+2026-01-05T23:49:49.0780744Z Site startup probe failed after 8.7233638 seconds.
+2026-01-05T23:49:49.1652929Z Failed to start site. Revert by stopping site.
+2026-01-05T23:49:49.1656991Z Site: school-safe-gpt-fe-1234 stopped.
+2026-01-05T23:49:49.7664487Z Site container: school-safe-gpt-fe-1234_managedIdentity terminated during site startup.
+2026-01-05T23:49:49.9104010Z Site: school-safe-gpt-fe-1234 will be blocked for 1 minutes till 01/05/2026 23:50:49
+2026-01-05T23:50:26.3842935Z Start site prohibitted because the site is being blocked.
+2026-01-05T23:50:27.4100626Z Start site prohibitted because the site is being blocked.
+2026-01-05T23:50:49.9102756Z Site: school-safe-gpt-fe-1234 is unblocked.
+2026-01-05T23:53:24.0756856Z Container start method called.
+2026-01-05T23:53:24.0758652Z Establishing network.
+2026-01-05T23:53:24.0759757Z Pulling image: appsvc/node:18-lts_20250724.2.tuxprod.
+2026-01-05T23:53:24.1620543Z Container is starting.
+2026-01-05T23:53:24.1622241Z Establishing user namespace if not established already.
+2026-01-05T23:53:24.1623107Z Establishing network if not established already.
+2026-01-05T23:53:24.1624223Z Mounting volumes.
+2026-01-05T23:53:24.1625674Z Nested mountpoint site/wwwroot
+2026-01-05T23:53:24.1711510Z Nested mountpoint volatile/logs
+2026-01-05T23:53:24.2007934Z Nested mountpoint 
+2026-01-05T23:53:24.2030381Z Nested mountpoint 
+2026-01-05T23:53:24.3115404Z Nested mountpoint 
+2026-01-05T23:53:24.3611952Z Nested mountpoint 
+2026-01-05T23:53:25.7486849Z Creating container.
+2026-01-05T23:53:25.7487818Z Creating pipes for streaming container io.
+2026-01-05T23:53:25.7488630Z Creating stdout named pipe at /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stdout_b884dd76cb774bbdbaedd706b04208f0.
+2026-01-05T23:53:25.7672950Z Successfully created stdout named pipe at: /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stdout_b884dd76cb774bbdbaedd706b04208f0.
+2026-01-05T23:53:25.7681962Z Opening named pipe /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stdout_b884dd76cb774bbdbaedd706b04208f0 for reading in non-blocking mode.
+2026-01-05T23:53:25.7688059Z Successfully opened named pipe: /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stdout_b884dd76cb774bbdbaedd706b04208f0.
+2026-01-05T23:53:25.7691321Z Successfully removed non-blocking flag from /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stdout_b884dd76cb774bbdbaedd706b04208f0.
+2026-01-05T23:53:25.7695973Z Creating stderr named pipe at /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stderr_c8973e597bc64cb19d7b4da7b4aa2fac.
+2026-01-05T23:53:25.7699356Z Successfully created stderr named pipe at: /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stderr_c8973e597bc64cb19d7b4da7b4aa2fac.
+2026-01-05T23:53:25.7702223Z Opening named pipe /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stderr_c8973e597bc64cb19d7b4da7b4aa2fac for reading in non-blocking mode.
+2026-01-05T23:53:25.7824385Z Successfully opened named pipe: /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stderr_c8973e597bc64cb19d7b4da7b4aa2fac.
+2026-01-05T23:53:25.7832935Z Successfully removed non-blocking flag from /podr/container/pipe/bef68f0be774_school-safe-gpt-fe-1234/stderr_c8973e597bc64cb19d7b4da7b4aa2fac.
+2026-01-05T23:53:25.7838733Z Creating container with image: appsvc/node:18-lts_20250724.2.tuxprod from registry: 10.1.0.6:13209 and fully qualified image name: 10.1.0.6:13209/appsvc/node:18-lts_20250724.2.tuxprod
+2026-01-05T23:53:26.0715203Z Starting container: bef68f0be774_school-safe-gpt-fe-1234.
+2026-01-05T23:53:26.1230548Z Starting watchers and probes.
+2026-01-05T23:53:26.1235804Z Starting metrics collection.
+2026-01-05T23:53:26.1238611Z Container is running.
+2026-01-05T23:53:27.2083831Z Container start method finished after 3132 ms.
+2026-01-05T23:53:35.6850030Z Container has finished running with exit code: 1.
+2026-01-05T23:53:35.6850965Z Container is terminating. Grace period: 5 seconds.
+2026-01-05T23:53:35.6853102Z Stop and delete container. Retry count = 0
+2026-01-05T23:53:35.6854228Z Stopping container: bef68f0be774_school-safe-gpt-fe-1234.
+2026-01-05T23:53:35.8145568Z Deleting container: bef68f0be774_school-safe-gpt-fe-1234. Retry count = 0
+2026-01-05T23:53:35.9579745Z Container spec TerminationMessagePolicy  path 
+2026-01-05T23:53:35.9581527Z Container is terminated. Total time elapsed: 272 ms.
+2026-01-05T23:53:35.9584329Z Site container: school-safe-gpt-fe-1234 terminated during site startup.
+2026-01-05T23:53:35.9793027Z Site startup probe failed after 8.762222 seconds.
+2026-01-05T23:53:36.1016958Z Failed to start site. Revert by stopping site.
+2026-01-05T23:53:36.1194294Z Site: school-safe-gpt-fe-1234 stopped.
+2026-01-05T23:53:36.7117896Z Site container: school-safe-gpt-fe-1234_managedIdentity terminated during site startup.
+2026-01-05T23:53:36.8663103Z Site: school-safe-gpt-fe-1234 will be blocked for 1 minutes till 01/05/2026 23:54:36
+2026-01-05T23:54:36.8658020Z Site: school-safe-gpt-fe-1234 is unblocked.
+2026-01-05T23:58:23.2843640Z Container start method called.
+2026-01-05T23:58:23.2847156Z Establishing network.
+2026-01-05T23:58:23.2855449Z Pulling image: appsvc/node:18-lts_20250724.2.tuxprod.
+2026-01-05T23:58:23.4102448Z Container is starting.
+2026-01-05T23:58:23.4174524Z Establishing user namespace if not established already.
+2026-01-05T23:58:23.4178350Z Establishing network if not established already.
+2026-01-05T23:58:23.4179930Z Mounting volumes.
+2026-01-05T23:58:23.4181623Z Nested mountpoint site/wwwroot
+2026-01-05T23:58:23.4285541Z Nested mountpoint volatile/logs
+2026-01-05T23:58:23.4397136Z Nested mountpoint 
+2026-01-05T23:58:23.4403439Z Nested mountpoint 
+2026-01-05T23:58:23.4791689Z Nested mountpoint 
+2026-01-05T23:58:23.5101527Z Nested mountpoint 
+2026-01-05T23:58:24.3617916Z Creating container.
+2026-01-05T23:58:24.3620282Z Creating pipes for streaming container io.
+2026-01-05T23:58:24.3621077Z Creating stdout named pipe at /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stdout_6b653dc3d3c24674bc0b099caf73e756.
+2026-01-05T23:58:24.3622922Z Successfully created stdout named pipe at: /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stdout_6b653dc3d3c24674bc0b099caf73e756.
+2026-01-05T23:58:24.3623746Z Opening named pipe /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stdout_6b653dc3d3c24674bc0b099caf73e756 for reading in non-blocking mode.
+2026-01-05T23:58:24.3624635Z Successfully opened named pipe: /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stdout_6b653dc3d3c24674bc0b099caf73e756.
+2026-01-05T23:58:24.3625401Z Successfully removed non-blocking flag from /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stdout_6b653dc3d3c24674bc0b099caf73e756.
+2026-01-05T23:58:24.3626202Z Creating stderr named pipe at /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stderr_c64ac8627beb4204b60bdb4c39f00ccd.
+2026-01-05T23:58:24.3627820Z Successfully created stderr named pipe at: /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stderr_c64ac8627beb4204b60bdb4c39f00ccd.
+2026-01-05T23:58:24.3628597Z Opening named pipe /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stderr_c64ac8627beb4204b60bdb4c39f00ccd for reading in non-blocking mode.
+2026-01-05T23:58:24.3629593Z Successfully opened named pipe: /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stderr_c64ac8627beb4204b60bdb4c39f00ccd.
+2026-01-05T23:58:24.3630292Z Successfully removed non-blocking flag from /podr/container/pipe/f6a22de37cc8_school-safe-gpt-fe-1234/stderr_c64ac8627beb4204b60bdb4c39f00ccd.
+2026-01-05T23:58:24.3631160Z Creating container with image: appsvc/node:18-lts_20250724.2.tuxprod from registry: 10.1.0.6:13209 and fully qualified image name: 10.1.0.6:13209/appsvc/node:18-lts_20250724.2.tuxprod
+2026-01-05T23:58:24.6397783Z Starting container: f6a22de37cc8_school-safe-gpt-fe-1234.
+2026-01-05T23:58:24.7208703Z Starting watchers and probes.
+2026-01-05T23:58:24.7213419Z Starting metrics collection.
+2026-01-05T23:58:24.7216531Z Container is running.
+2026-01-05T23:58:24.8343415Z Container start method finished after 1518 ms.
+2026-01-05T23:58:35.2119227Z Container has finished running with exit code: 1.
+2026-01-05T23:58:35.2120558Z Container is terminating. Grace period: 5 seconds.
+2026-01-05T23:58:35.2135971Z Stop and delete container. Retry count = 0
+2026-01-05T23:58:35.2137130Z Stopping container: f6a22de37cc8_school-safe-gpt-fe-1234.
+2026-01-05T23:58:35.2449079Z Deleting container: f6a22de37cc8_school-safe-gpt-fe-1234. Retry count = 0
+2026-01-05T23:58:35.3675580Z Container spec TerminationMessagePolicy  path 
+2026-01-05T23:58:35.3748960Z Container is terminated. Total time elapsed: 155 ms.
+2026-01-05T23:58:35.3754383Z Site container: school-safe-gpt-fe-1234 terminated during site startup.
+2026-01-05T23:58:35.3774964Z Site startup probe failed after 10.5423618 seconds.
+2026-01-05T23:58:35.5053947Z Failed to start site. Revert by stopping site.
+2026-01-05T23:58:35.5058910Z Site: school-safe-gpt-fe-1234 stopped.

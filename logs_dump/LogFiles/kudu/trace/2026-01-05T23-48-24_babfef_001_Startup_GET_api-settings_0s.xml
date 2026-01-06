@@ -1,0 +1,3 @@
+<step title="Startup Request" date="2026-01-05T23:48:24.965" instance="babfef" url="/api/settings" method="GET" type="request" pid="768,1,7" ScmType="None" >
+  <step title="Cleanup Xml Logs" date="2026-01-05T23:48:24.984" /><!-- duration: 6ms -->
+</step><!-- duration: 32ms -->

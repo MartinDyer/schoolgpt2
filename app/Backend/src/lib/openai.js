@@ -1,6 +1,7 @@
 // src/lib/openai.js
 // Azure OpenAI config + utilities (unchanged behavior)
 
+const axios = require("axios");
 const { DefaultAzureCredential, getBearerTokenProvider } = require("@azure/identity");
 
 const endpointBase = (process.env.AZURE_OPENAI_ENDPOINT || "").replace(/\/$/, "");
@@ -57,7 +58,7 @@ const choiceFiltered = (choice) => {
 module.exports = {
   axios,
   chatUrl,
-  headers,
+  getHeaders,
   refusalText,
   isContentFilterErr,
   choiceFiltered,
