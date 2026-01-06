@@ -110,9 +110,9 @@ jobs:
           cp -R app/Frontend/dist/* app/Backend/public/
 
       # --- Packaging ---
-      - name: Zig Backend Artifact
+      - name: Create Backend Artifact (excluding node_modules)
         working-directory: ./app/Backend
-        run: zip -r ../../backend-app.zip .
+        run: zip -r ../../backend-app.zip . -x "node_modules/*"
 
       # --- Deployment ---
       - name: Deploy to Azure Web App
