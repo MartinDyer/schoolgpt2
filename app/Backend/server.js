@@ -1,6 +1,16 @@
 console.log("------------------------------------------------------------------");
 console.log(`[BOOT] STARTING NODE PROCESS`);
 console.log(`[BOOT] Time: ${new Date().toISOString()}`);
+
+process.on("uncaughtException", (err) => {
+  console.error("[BOOT] UNCAUGHT EXCEPTION:", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[BOOT] UNHANDLED REJECTION:", reason);
+});
+
 console.log("------------------------------------------------------------------");
 
 // /server.js
