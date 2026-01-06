@@ -48,10 +48,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // health
 app.get("/health", (_, res) => res.json({ status: "ok" }));
 
-// Catch-all route to serve the React app
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Catch-all route to serve the React app is handled by static middleware above
+// Express 5 doesn't support app.get("*") syntax, and static middleware serves index.html automatically
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[BOOT] API listening on http://0.0.0.0:${PORT}`);
