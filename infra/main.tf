@@ -134,7 +134,7 @@ resource "azurerm_linux_web_app" "frontend" {
     # Node runtime (if you serve the React build via Node)
     # If you're using something else (e.g. .NET), adjust this.
     application_stack {
-      node_version = "18-lts"
+      node_version = "20-lts"
     }
   }
 
