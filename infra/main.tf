@@ -139,7 +139,7 @@ resource "azurerm_linux_web_app" "frontend" {
   }
 
   app_settings = {
-    "WEBSITE_RUN_FROM_PACKAGE" = "1"
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
     "NODE_ENV"                 = "production"
 
     # 🔗 Link frontend → backend:
