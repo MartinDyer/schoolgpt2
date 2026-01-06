@@ -148,7 +148,7 @@ resource "azurerm_linux_web_app" "frontend" {
     #"API_BASE_URL" = "https://${azurerm_linux_web_app.backend.default_hostname}"
      
     # Basic Configuration
-    "WEBSITES_PORT"                       = "80"
+    "PORT"                                    = "8080"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
 
     # Application Insights for Monitoring
