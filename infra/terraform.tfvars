@@ -10,8 +10,9 @@ location              = "uksouth"
 azure_tenant_id       = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea" # REPLACE_WITH_YOUR_TENANT_ID
 
 # SQL Database Configuration (Auto-generated unique names)
-sql_server_name       = "school1sqlsrve2b9"
-sql_admin                   = "sqladminuser"
+school_name           = "lincoln-high-school"
+sql_server_name       = "lincolnsqlserver"
+sql_admin             = "sqladminuser"
 sql_password                = "MyStrongP@ssw0rd123!" # REPLACE: Use a secure password
 sql_db_name                 = "schoolgptdb"
 sql_sku_name                = "S1"                                   # Basic, S0, S1, S2, S3 for different performance tiers
