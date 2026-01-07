@@ -50,5 +50,12 @@ key_vault_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb" # REPLACE_WIT
 # - sql_azuread_admin_login: Your Azure AD admin email  
 # - sql_azuread_admin_object_id: Your Azure AD object ID
 # - key_vault_admin_object_id: Your Azure AD object ID
-# - All resource names must be globally unique
+# All resource names must be globally unique
 #################################################################
+
+# ================== AI Foundry Configuration (Legacy/Active) ==================
+# Required for Terraform to find the existing resource during destroy/apply
+azure_openai_endpoint       = "https://chatgpt-safe.cognitiveservices.azure.com/"
+azure_openai_deployment     = "Test-gpt-4.1-mini"
+azure_openai_resource_name  = "ChatGPT-Safe"
+azure_openai_resource_group = "AI-Foundry"
