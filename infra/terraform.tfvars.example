@@ -1,0 +1,38 @@
+# Example Terraform Variables for School Deployment
+# Copy this file to `terraform.tfvars` and fill in your values
+
+# ================== Basic Configuration ==================
+school_name = "lincoln-high-school"  # Your school name (lowercase, hyphens)
+environment = "production"
+location    = "uksouth"  # Azure region
+
+# ================== Azure AD / Tenant ==================
+azure_tenant_id = "your-azure-tenant-id"  # From Azure Portal → Azure AD → Overview
+
+# ================== AI Foundry (Manual Deployment) ==================
+# School deploys AI Foundry manually first using AI_FOUNDRY_DEPLOYMENT_GUIDE.md
+# Then provides these values:
+
+azure_openai_endpoint       = "https://lincoln-high-ai.openai.azure.com/"
+azure_openai_deployment     = "gpt-4o-mini"  # or "gpt-4o"
+azure_openai_resource_name  = "lincoln-high-ai"
+azure_openai_resource_group = "rg-lincoln-high-ai-foundry"
+
+# Auto-grant AI access via Terraform (false = school grants manually in Portal)
+auto_grant_ai_access = false
+
+# ================== Database Configuration ==================
+sql_admin   = "sqladminuser"
+sql_db_name = "lincolnhighdb"
+sql_sku_name = "S1"  # Basic, S0, S1, S2, S3
+
+# SQL password is auto-generated and stored in Key Vault
+# sql_password = "optional-custom-password"  # Uncomment to set custom password
+
+# ================== App Service ==================
+app_service_sku = "B2"  # B1 ($13/mo), B2 ($55/mo), S1 ($70/mo)
+
+# ================== Optional: Custom Names ==================
+# resource_group_name = "custom-rg-name"  # Auto-generated if not provided
+# app_service_plan_name = "custom-asp-name"
+# sql_server_name = "custom-sql-server"  # Must be globally unique

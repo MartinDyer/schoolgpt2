@@ -141,3 +141,33 @@ variable "sql_azuread_admin_object_id" {
 } 
 
 
+
+# ================== AI Foundry Configuration ==================
+# Schools deploy their own AI Foundry resource manually
+# These variables reference the existing AI Foundry
+
+variable "azure_openai_endpoint" {
+  description = "Endpoint URL for the existing Azure OpenAI resource (e.g., https://school-ai.openai.azure.com/)"
+  type        = string
+}
+
+variable "azure_openai_deployment" {
+  description = "Name of the model deployment in AI Foundry (e.g., gpt-4o, gpt-4o-mini)"
+  type        = string
+}
+
+variable "azure_openai_resource_name" {
+  description = "Name of the existing AI Foundry resource"
+  type        = string
+}
+
+variable "azure_openai_resource_group" {
+  description = "Resource group containing the AI Foundry resource"
+  type        = string
+}
+
+variable "auto_grant_ai_access" {
+  description = "Automatically grant web app access to AI Foundry via Terraform (false = school grants manually)"
+  type        = bool
+  default     = false
+}

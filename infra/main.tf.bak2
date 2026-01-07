@@ -20,24 +20,6 @@ resource "random_string" "unique" {
 ## Create a resource group for the resources to be stored in
 ##
 
-## Reference existing AI Foundry resource (deployed manually by school)
-##
-data "azurerm_cognitive_account" "ai_foundry" {
-  name                = var.azure_openai_resource_name
-  resource_group_name = var.azure_openai_resource_group
-}
-
-# Grant App Service Access to AI Foundry (Managed Identity)
-# School should manually grant this permission via Azure Portal
-resource "azurerm_role_assignment" "webapp_ai" {
-  count = var.auto_grant_ai_access ? 1 : 0
-  
-  scope                = data.azurerm_cognitive_account.ai_foundry.id
-  role_definition_name = "Cognitive Services OpenAI User"
-  principal_id         = azurerm_linux_web_app.frontend.identity[0].principal_id
-}
-
-
 
 # Resource Group
 resource "azurerm_resource_group" "main" {
@@ -114,7 +96,7 @@ resource "azurerm_linux_web_app" "frontend" {
     # 🧠 OpenAI Configuration
     "AZURE_OPENAI_ENDPOINT"   = var.azure_openai_endpoint
     # "AZURE_OPENAI_API_KEY"  = REMOVED (Using Managed Identity)
-    "AZURE_OPENAI_DEPLOYMENT" = var.azure_openai_deployment
+    "AZURE_OPENAI_DEPLOYMENT" = azurerm_cognitive_deployment.aifoundry_deployment_gpt_4o.name
     "AZURE_OPENAI_API_VERSION" = "2024-08-01-preview"
 
     # 🔍 Search Configuration (if used, else optional)

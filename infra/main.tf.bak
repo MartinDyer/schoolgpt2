@@ -19,24 +19,70 @@ resource "random_string" "unique" {
 
 ## Create a resource group for the resources to be stored in
 ##
-
-## Reference existing AI Foundry resource (deployed manually by school)
+## Create a resource group for the resources to be stored in
 ##
-data "azurerm_cognitive_account" "ai_foundry" {
-  name                = var.azure_openai_resource_name
-  resource_group_name = var.azure_openai_resource_group
+resource "azurerm_resource_group" "foundry_rg" {
+  name     = "rg-aifoundry-${random_string.unique.result}"
+  location = var.location
+  
 }
 
-# Grant App Service Access to AI Foundry (Managed Identity)
-# School should manually grant this permission via Azure Portal
+## Create an AI Foundry resource
+##
+
+resource "azurerm_cognitive_account" "ai_foundry" {
+  name                = "School-Safe-GPT-AIF-${random_string.unique.result}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.foundry_rg.name
+  kind                = "OpenAI"
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  sku_name = "S0"
+
+  # required for stateful development in Foundry including agent service
+  custom_subdomain_name = "school-safe-gpt-aif-${random_string.unique.result}"
+
+  tags = {
+    Acceptance = "Test"
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+}
+
+## Create a deployment for OpenAI's GPT-4o in the AI Foundry resource
+##
+resource "azurerm_cognitive_deployment" "aifoundry_deployment_gpt_4o" {
+  depends_on = [
+    azurerm_cognitive_account.ai_foundry
+  ]
+
+  name                 = "gpt-4o"
+  cognitive_account_id = azurerm_cognitive_account.ai_foundry.id
+
+  sku {
+    name     = "GlobalStandard"
+    capacity = 1
+  }
+
+  model {
+    format  = "OpenAI"
+    name    = "gpt-4o"
+    version = "2024-11-20"
+  }
+}
+
+# 🔐 Grant App Service Access to AI Foundry (Managed Identity)
 resource "azurerm_role_assignment" "webapp_ai" {
-  count = var.auto_grant_ai_access ? 1 : 0
-  
-  scope                = data.azurerm_cognitive_account.ai_foundry.id
+  scope                = azurerm_cognitive_account.ai_foundry.id
   role_definition_name = "Cognitive Services OpenAI User"
   principal_id         = azurerm_linux_web_app.frontend.identity[0].principal_id
 }
-
 
 
 # Resource Group
@@ -114,7 +160,7 @@ resource "azurerm_linux_web_app" "frontend" {
     # 🧠 OpenAI Configuration
     "AZURE_OPENAI_ENDPOINT"   = var.azure_openai_endpoint
     # "AZURE_OPENAI_API_KEY"  = REMOVED (Using Managed Identity)
-    "AZURE_OPENAI_DEPLOYMENT" = var.azure_openai_deployment
+    "AZURE_OPENAI_DEPLOYMENT" = azurerm_cognitive_deployment.aifoundry_deployment_gpt_4o.name
     "AZURE_OPENAI_API_VERSION" = "2024-08-01-preview"
 
     # 🔍 Search Configuration (if used, else optional)
