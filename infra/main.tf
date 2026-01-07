@@ -49,9 +49,9 @@ resource "azurerm_cognitive_account" "ai_foundry" {
     Acceptance = "Test"
   }
 
-lifecycle {
-    prevent_destroy = true
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 
 }
 
