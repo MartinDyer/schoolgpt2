@@ -295,10 +295,4 @@ az cognitiveservices account deployment update \
 
 ---
 
-## Contact & Support
 
-**Deployment Engineer**: Muhammad Umair Ali  
-**Deployment Date**: 2026-01-07  
-**Documentation Version**: 1.0
-
-For issues or questions, refer to the [walkthrough.md](file:///Users/muhammadumairali/.gemini/antigravity/brain/d85929b8-d639-4d3e-b688-027dbe899c5b/walkthrough.md) for detailed troubleshooting steps.
