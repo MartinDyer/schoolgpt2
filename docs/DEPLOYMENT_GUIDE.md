@@ -16,6 +16,21 @@ gh workflow run "06- Deploy Full App" --ref main
 
 **Expected Duration:** 5-10 minutes
 
+### Post-Deployment Setup (Critical)
+
+> [!IMPORTANT]  
+> **This step is required for the AI Chat to work.**  
+> The deployed Web App uses a Managed Identity that must be manually granted permission to access the AI Foundry.
+
+1. Go to **Azure Portal** and find your AI Foundry resource (e.g., `ChatGPT-Safe`).
+2. Go to **Access control (IAM)** -> **Add role assignment**.
+3. Select Role: **Cognitive Services OpenAI User**.
+4. Assign access to: **Managed Identity** -> Select Member.
+5. Select your new Web App (e.g., `lincoln-high-school-app`) and click **Select**.
+6. Click **Review + assign**.
+
+*Wait 1-2 minutes for permissions to propagate.*
+
 ---
 
 ## Configuration Reference

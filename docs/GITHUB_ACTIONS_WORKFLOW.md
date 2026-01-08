@@ -119,6 +119,9 @@ azure_openai_resource_name = "School-Safe-GPT-AIF-xxxxx"
 ---
 
 ### 4️⃣ **Grant AI Access** (Per School)
+> [!WARNING]
+> **CRITICAL MANUAL STEP**: This cannot be automated securely across subscriptions. You MUST do this for the AI to answer questions.
+
 **Manual Step** (Azure Portal) or via CLI:
 
 **Option A - Azure Portal**:
