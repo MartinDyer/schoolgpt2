@@ -336,7 +336,7 @@ terraform destroy -var-file=terraform.tfvars
 **Fix**: Grant "Cognitive Services OpenAI User" role (Step 4)
 
 ### Terraform State Locked
-**Cause**: Previous workflow still running or crashed
+**Cause**: Previous workflow still running or crash
 
 **Fix**:
 ```bash

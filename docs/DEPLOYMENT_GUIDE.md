@@ -294,5 +294,10 @@ az cognitiveservices account deployment update \
 ```
 
 ---
+## Contact & Support
 
+**Developer**: Sapience Cloud Ltd
+**Email**: lukeaxon@sapiencecloud.co.uk
+**Deployed**: 2026-01-07
+**Documentation Version**: 1.0
 

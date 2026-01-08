@@ -324,18 +324,17 @@ This is a client project. For issues or feature requests, contact the developmen
 
 ---
 
-## License
+## 📄 **License**
 
-Proprietary - All rights reserved
+ISC - https://opensource.org/license/isc-license-txt
 
----
 
-## Support
+## **Support**
 
-**Developer**: Muhammad Umair Ali  
-**Email**: mumairali@outlook.com  
+**Developer**: Sapience Cloud Ltd
+**Email**: lukeaxon@sapiencecloud.co.uk
 **Deployed**: 2026-01-07
-
+**Documentation Version**: 1.0
 For deployment issues, see [DEPLOYMENT.md](./DEPLOYMENT.md)  
 For technical walkthrough, see [walkthrough.md](./walkthrough.md)
 

@@ -231,4 +231,4 @@ A: Yes! Just deploy the AI Foundry in their subscription and provide the configu
 4. **Deploy**: Run GitHub Actions workflow with school's values
 5. **Grant access**: School grants Managed Identity permission
 6. **Test**: Verify everything works
-7. **Launch**: School starts using the AI chatbot! 🚀
+7. **Launch**: School starts using the AI chatbot 🚀

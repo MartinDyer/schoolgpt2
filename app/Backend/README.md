@@ -252,7 +252,7 @@ PORT=3000
 
 ## 📝 License
 
-ISC
+ISC - https://opensource.org/license/isc-license-txt
 
 ## 🤝 Contributing
 
@@ -264,9 +264,10 @@ ISC
 
 ## 📞 Support
 
-- **Documentation**: Check the guides in this repository
-- **Issues**: Open a GitHub issue
-- **Architecture**: See [docs/BACKEND_OVERVIEW.md](./docs/BACKEND_OVERVIEW.md)
+**Developer**: Sapience Cloud Ltd
+**Email**: lukeaxon@sapiencecloud.co.uk
+**Deployed**: 2026-01-07
+**Documentation Version**: 1.0
 
 ---
 

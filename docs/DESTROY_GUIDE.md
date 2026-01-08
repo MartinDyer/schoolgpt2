@@ -1,6 +1,6 @@
 # Destroy School Infrastructure (Keep Shared AI)
 
-This guide explains how to destroy a school's infrastructure while preserving the shared `ChatGPT-Safe` AI Foundry resource.
+This guide explains how to destroy a school's infrastructure while preserving the shared `ChatGPT-Safe` AI Foundry resource which is deployed manually.
 
 ## Why Keep the AI Foundry?
 

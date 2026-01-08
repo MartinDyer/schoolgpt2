@@ -142,6 +142,7 @@ AI_FOUNDRY_RESOURCE_GROUP="rg-[school-name]-ai-foundry"
 - Start with **gpt-4o-mini** for cost savings
 - Upgrade to **gpt-4o** if better quality is needed
 - Monitor usage in Azure Portal → Cost Management
+- Check AI Founndry regularly for model updates
 
 ---
 

@@ -278,7 +278,7 @@ cd infra
 terraform destroy -var-file=terraform.tfvars
 ```
 
-**Note**: School can keep their AI Foundry for future use!
+**Note**: School can keep their AI Foundry for future use
 
 ---
 

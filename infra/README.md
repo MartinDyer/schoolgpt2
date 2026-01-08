@@ -258,4 +258,12 @@ This template is designed for educational institutions. Contributions welcome!
 
 ## 📄 **License**
 
-MIT License - See LICENSE file for details. 
+ISC - https://opensource.org/license/isc-license-txt
+
+
+## **Support**
+
+**Developer**: Sapience Cloud Ltd
+**Email**: lukeaxon@sapiencecloud.co.uk
+**Deployed**: 2026-01-07
+**Documentation Version**: 1.0
