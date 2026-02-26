@@ -23,14 +23,14 @@ auto_grant_ai_access = false
 
 # ================== Database Configuration ==================
 sql_admin   = "sqladminuser"
-sql_db_name = "lincolnhighdb"
+sql_db_name = "blundellsschooldb"
 sql_sku_name = "S1"  # Basic, S0, S1, S2, S3
 
 # SQL password is auto-generated and stored in Key Vault
 # sql_password = "optional-custom-password"  # Uncomment to set custom password
 
 # ================== App Service ==================
-app_service_sku = "B2"  # B1 ($13/mo), B2 ($55/mo), S1 ($70/mo)
+app_service_sku = "B1"  # B1 ($13/mo), B2 ($55/mo), S1 ($70/mo)
 
 # ================== Optional: Custom Names ==================
 # resource_group_name = "custom-rg-name"  # Auto-generated if not provided
