@@ -10,8 +10,8 @@ location              = "uksouth"
 azure_tenant_id       = "d51fcef1-e2eb-407e-8d79-3cefaf2255ea" # REPLACE_WITH_YOUR_TENANT_ID
 
 # SQL Database Configuration (Auto-generated unique names)
-school_name = "Luke-Test"
-sql_server_name       = "luketestsqlsrv9b1e"
+school_name = "testscho"
+sql_server_name       = "testschosqlsrvdfcb"
 sql_admin             = "sqladminuser"
 sql_password                = "MyStrongP@ssw0rd123!" # REPLACE: Use a secure password
 sql_db_name                 = "schoolgptdb"
@@ -23,7 +23,7 @@ sql_azuread_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb" # REPLACE_W
 app_insights_name = "schoolgpt-ai"
 
 # Azure Key Vault (Auto-generated unique names)
-key_vault_name            = "luketestkv9b1e"
+key_vault_name            = "testschokvdfcb"
 key_vault_admin_object_id = "f3885dda-10a2-41bc-bffa-3e657748ecfb" # REPLACE_WITH_YOUR_OBJECT_ID
 
 # Content filtering is managed through Azure AI Foundry portal
