@@ -1,0 +1,127 @@
+name: B01 - Deploy AI Foundry (Bicep)
+
+on:
+  workflow_dispatch:
+    inputs:
+      resource_group_name:
+        description: 'Target resource group name'
+        required: true
+        default: 'schoolgpt-production-rg'
+        type: string
+      location:
+        description: 'Azure region'
+        required: true
+        default: 'uksouth'
+        type: string
+      school_name:
+        description: 'School name for tags'
+        required: true
+        default: 'Example School'
+        type: string
+      environment:
+        description: 'Environment name'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+      ai_foundry_name:
+        description: 'Globally unique AI Foundry account name'
+        required: true
+        type: string
+      ai_foundry_custom_subdomain:
+        description: 'Globally unique custom subdomain'
+        required: true
+        type: string
+      ai_deployment_name:
+        description: 'Azure OpenAI deployment name'
+        required: true
+        default: 'gpt-4o'
+        type: string
+      ai_model_name:
+        description: 'Azure OpenAI model name'
+        required: true
+        default: 'gpt-4o'
+        type: string
+      ai_model_version:
+        description: 'Azure OpenAI model version'
+        required: true
+        default: '2024-11-20'
+        type: string
+      rai_policy_name:
+        description: 'Optional RAI policy name'
+        required: false
+        default: 'schoolgpt-default-rai'
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Validate AI Foundry template
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az group create \
+              --name "${{ github.event.inputs.resource_group_name }}" \
+              --location "${{ github.event.inputs.location }}"
+
+            az deployment group validate \
+              --resource-group "${{ github.event.inputs.resource_group_name }}" \
+              --template-file "./bicep/ai-foundry.bicep" \
+              --parameters \
+                location="${{ github.event.inputs.location }}" \
+                schoolName="${{ github.event.inputs.school_name }}" \
+                environment="${{ github.event.inputs.environment }}" \
+                aiFoundryName="${{ github.event.inputs.ai_foundry_name }}" \
+                aiFoundryCustomSubdomain="${{ github.event.inputs.ai_foundry_custom_subdomain }}" \
+                aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" \
+                aiModelName="${{ github.event.inputs.ai_model_name }}" \
+                aiModelVersion="${{ github.event.inputs.ai_model_version }}" \
+                raiPolicyName="${{ github.event.inputs.rai_policy_name }}"
+
+      - name: Deploy AI Foundry
+        id: deploy
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            DEPLOYMENT_NAME="b01-aif-${GITHUB_RUN_NUMBER}"
+            az group create \
+              --name "${{ github.event.inputs.resource_group_name }}" \
+              --location "${{ github.event.inputs.location }}"
+
+            az deployment group create \
+              --name "$DEPLOYMENT_NAME" \
+              --resource-group "${{ github.event.inputs.resource_group_name }}" \
+              --template-file "./bicep/ai-foundry.bicep" \
+              --parameters \
+                location="${{ github.event.inputs.location }}" \
+                schoolName="${{ github.event.inputs.school_name }}" \
+                environment="${{ github.event.inputs.environment }}" \
+                aiFoundryName="${{ github.event.inputs.ai_foundry_name }}" \
+                aiFoundryCustomSubdomain="${{ github.event.inputs.ai_foundry_custom_subdomain }}" \
+                aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" \
+                aiModelName="${{ github.event.inputs.ai_model_name }}" \
+                aiModelVersion="${{ github.event.inputs.ai_model_version }}" \
+                raiPolicyName="${{ github.event.inputs.rai_policy_name }}" \
+              --query properties.outputs > outputs.json
+
+            echo "AI Foundry outputs"
+            cat outputs.json

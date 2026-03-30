@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "uksouth"
+    },
+    "environment": {
+      "value": "production"
+    },
+    "schoolName": {
+      "value": "Example School"
+    },
+    "namePrefix": {
+      "value": "examplesch"
+    },
+    "azureTenantId": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "keyVaultAdminObjectId": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "deployAiFoundry": {
+      "value": true
+    },
+    "aiDeploymentName": {
+      "value": "gpt-4o"
+    },
+    "aiModelName": {
+      "value": "gpt-4o"
+    },
+    "aiModelVersion": {
+      "value": "2024-11-20"
+    }
+  }
+}

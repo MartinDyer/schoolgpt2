@@ -1,0 +1,196 @@
+name: B03 - Deploy Full App (Bicep)
+
+on:
+  workflow_dispatch:
+    inputs:
+      resource_group_name:
+        description: 'Target resource group name'
+        required: true
+        default: 'schoolgpt-production-rg'
+        type: string
+      location:
+        description: 'Azure region'
+        required: true
+        default: 'uksouth'
+        type: string
+      school_name:
+        description: 'School name used in tags'
+        required: true
+        default: 'Example School'
+        type: string
+      environment:
+        description: 'Environment name'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+      name_prefix:
+        description: 'Short safe prefix for generated names'
+        required: true
+        default: 'schoolgpt'
+        type: string
+      deploy_ai_foundry:
+        description: 'Provision AI Foundry in this deployment'
+        required: true
+        default: true
+        type: boolean
+      existing_ai_foundry_endpoint:
+        description: 'Existing AI Foundry endpoint when deploy_ai_foundry is false'
+        required: false
+        default: ''
+        type: string
+      existing_ai_foundry_resource_name:
+        description: 'Existing AI Foundry resource name when deploy_ai_foundry is false'
+        required: false
+        default: ''
+        type: string
+      ai_deployment_name:
+        description: 'Azure OpenAI deployment name'
+        required: true
+        default: 'gpt-4o'
+        type: string
+      ai_model_name:
+        description: 'Azure OpenAI model name'
+        required: true
+        default: 'gpt-4o'
+        type: string
+      ai_model_version:
+        description: 'Azure OpenAI model version'
+        required: true
+        default: '2024-11-20'
+        type: string
+      app_service_sku:
+        description: 'App Service plan SKU'
+        required: true
+        default: 'B2'
+        type: string
+      sql_sku_name:
+        description: 'Azure SQL database SKU'
+        required: true
+        default: 'S1'
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    outputs:
+      web_app_name: ${{ steps.outputs.outputs.web_app_name }}
+      resource_group_name: ${{ steps.outputs.outputs.resource_group_name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy infrastructure with Bicep
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            DEPLOYMENT_NAME="b03-full-${GITHUB_RUN_NUMBER}"
+            az group create \
+              --name "${{ github.event.inputs.resource_group_name }}" \
+              --location "${{ github.event.inputs.location }}"
+
+            az deployment group create \
+              --name "$DEPLOYMENT_NAME" \
+              --resource-group "${{ github.event.inputs.resource_group_name }}" \
+              --template-file "./bicep/main.bicep" \
+              --parameters \
+                location="${{ github.event.inputs.location }}" \
+                environment="${{ github.event.inputs.environment }}" \
+                schoolName="${{ github.event.inputs.school_name }}" \
+                namePrefix="${{ github.event.inputs.name_prefix }}" \
+                azureTenantId="${{ secrets.AZURE_TENANT_ID }}" \
+                keyVaultAdminObjectId="${{ secrets.KEY_VAULT_ADMIN_OBJECT_ID }}" \
+                deployAiFoundry=${{ github.event.inputs.deploy_ai_foundry }} \
+                existingAiFoundryEndpoint="${{ github.event.inputs.existing_ai_foundry_endpoint }}" \
+                existingAiFoundryResourceName="${{ github.event.inputs.existing_ai_foundry_resource_name }}" \
+                aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" \
+                aiModelName="${{ github.event.inputs.ai_model_name }}" \
+                aiModelVersion="${{ github.event.inputs.ai_model_version }}" \
+                appServiceSku="${{ github.event.inputs.app_service_sku }}" \
+                sqlSkuName="${{ github.event.inputs.sql_sku_name }}" \
+              --query properties.outputs > outputs.json
+
+      - name: Capture deployment outputs
+        id: outputs
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            WEB_APP_NAME=$(jq -r '.webAppName.value' outputs.json)
+            RESOURCE_GROUP_NAME=$(jq -r '.resourceGroupName.value' outputs.json)
+            echo "web_app_name=$WEB_APP_NAME" >> $GITHUB_OUTPUT
+            echo "resource_group_name=$RESOURCE_GROUP_NAME" >> $GITHUB_OUTPUT
+            echo "Web app: $WEB_APP_NAME"
+            echo "Resource group: $RESOURCE_GROUP_NAME"
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    env:
+      WEB_APP_NAME: ${{ needs.deploy-infrastructure.outputs.web_app_name }}
+      RESOURCE_GROUP_NAME: ${{ needs.deploy-infrastructure.outputs.resource_group_name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            app/Frontend/package-lock.json
+            app/Backend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./app/Frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./app/Frontend
+        run: VITE_API_BASE="" npm run build
+
+      - name: Install backend dependencies
+        working-directory: ./app/Backend
+        run: npm ci
+
+      - name: Copy frontend build into backend public folder
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            mkdir -p app/Backend/public
+            cp -R app/Frontend/dist/* app/Backend/public/
+
+      - name: Package backend app
+        working-directory: ./app/Backend
+        run: zip -r ../../backend-app.zip . -x "node_modules/*"
+
+      - name: Deploy package to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEB_APP_NAME }}
+          package: backend-app.zip

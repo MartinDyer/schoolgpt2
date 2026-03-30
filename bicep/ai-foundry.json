@@ -1,0 +1,227 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.41.2.15936",
+      "templateHash": "14145382506993568645"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "uksouth",
+      "metadata": {
+        "description": "Azure region for the AI Foundry resource group and resources."
+      }
+    },
+    "aiFoundryName": {
+      "type": "string",
+      "metadata": {
+        "description": "AI Foundry account name."
+      }
+    },
+    "aiFoundryCustomSubdomain": {
+      "type": "string",
+      "metadata": {
+        "description": "Custom subdomain used by the AI Foundry account."
+      }
+    },
+    "aiDeploymentName": {
+      "type": "string",
+      "defaultValue": "gpt-4o",
+      "metadata": {
+        "description": "Model deployment name exposed to the app."
+      }
+    },
+    "aiModelName": {
+      "type": "string",
+      "defaultValue": "gpt-4o",
+      "metadata": {
+        "description": "Azure OpenAI model name to deploy."
+      }
+    },
+    "aiModelVersion": {
+      "type": "string",
+      "defaultValue": "2024-11-20",
+      "metadata": {
+        "description": "Azure OpenAI model version to deploy."
+      }
+    },
+    "aiDeploymentSkuName": {
+      "type": "string",
+      "defaultValue": "GlobalStandard",
+      "metadata": {
+        "description": "Deployment SKU for the Azure OpenAI deployment."
+      }
+    },
+    "aiDeploymentCapacity": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Capacity for the Azure OpenAI deployment."
+      }
+    },
+    "raiPolicyName": {
+      "type": "string",
+      "defaultValue": "schoolgpt-default-rai",
+      "metadata": {
+        "description": "Optional RAI policy name. Leave empty to skip custom policy creation."
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "production",
+      "metadata": {
+        "description": "Environment name used in tags."
+      }
+    },
+    "schoolName": {
+      "type": "string",
+      "defaultValue": "SchoolGPT",
+      "metadata": {
+        "description": "School name used in tags."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2024-10-01",
+      "name": "[parameters('aiFoundryName')]",
+      "location": "[parameters('location')]",
+      "kind": "AIServices",
+      "sku": {
+        "name": "S0"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "customSubDomainName": "[parameters('aiFoundryCustomSubdomain')]",
+        "publicNetworkAccess": "Enabled"
+      },
+      "tags": {
+        "Environment": "[parameters('environment')]",
+        "Project": "SchoolGPT",
+        "School": "[parameters('schoolName')]",
+        "ManagedBy": "Bicep",
+        "Workstream": "AI-Foundry"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('raiPolicyName')))]",
+      "type": "Microsoft.CognitiveServices/accounts/raiPolicies",
+      "apiVersion": "2024-10-01",
+      "name": "[format('{0}/{1}', parameters('aiFoundryName'), parameters('raiPolicyName'))]",
+      "properties": {
+        "basePolicyName": "Microsoft.Default",
+        "mode": "Blocking",
+        "contentFilters": [
+          {
+            "name": "Hate",
+            "severityThreshold": "High",
+            "source": "Prompt",
+            "enabled": true,
+            "blocking": true
+          },
+          {
+            "name": "Hate",
+            "severityThreshold": "High",
+            "source": "Completion",
+            "enabled": true,
+            "blocking": true
+          },
+          {
+            "name": "Sexual",
+            "severityThreshold": "High",
+            "source": "Prompt",
+            "enabled": true,
+            "blocking": true
+          },
+          {
+            "name": "Sexual",
+            "severityThreshold": "High",
+            "source": "Completion",
+            "enabled": true,
+            "blocking": true
+          },
+          {
+            "name": "Violence",
+            "severityThreshold": "High",
+            "source": "Prompt",
+            "enabled": true,
+            "blocking": true
+          },
+          {
+            "name": "Violence",
+            "severityThreshold": "High",
+            "source": "Completion",
+            "enabled": true,
+            "blocking": true
+          },
+          {
+            "name": "SelfHarm",
+            "severityThreshold": "High",
+            "source": "Prompt",
+            "enabled": true,
+            "blocking": true
+          },
+          {
+            "name": "SelfHarm",
+            "severityThreshold": "High",
+            "source": "Completion",
+            "enabled": true,
+            "blocking": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('aiFoundryName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2024-10-01",
+      "name": "[format('{0}/{1}', parameters('aiFoundryName'), parameters('aiDeploymentName'))]",
+      "sku": {
+        "name": "[parameters('aiDeploymentSkuName')]",
+        "capacity": "[parameters('aiDeploymentCapacity')]"
+      },
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+          "name": "[parameters('aiModelName')]",
+          "version": "[parameters('aiModelVersion')]"
+        },
+        "raiPolicyName": "[if(empty(parameters('raiPolicyName')), null(), parameters('raiPolicyName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('aiFoundryName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "resourceGroupName": {
+      "type": "string",
+      "value": "[resourceGroup().name]"
+    },
+    "aiFoundryName": {
+      "type": "string",
+      "value": "[parameters('aiFoundryName')]"
+    },
+    "azureOpenAiEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('aiFoundryName')), '2024-10-01').endpoint]"
+    },
+    "azureOpenAiDeployment": {
+      "type": "string",
+      "value": "[parameters('aiDeploymentName')]"
+    },
+    "raiPolicyName": {
+      "type": "string",
+      "value": "[if(empty(parameters('raiPolicyName')), '', parameters('raiPolicyName'))]"
+    }
+  }
+}
