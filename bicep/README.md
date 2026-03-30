@@ -1,31 +1,32 @@
 # SchoolGPT Bicep Deployment
 
-This folder is the Bicep workstream that sits alongside the existing Terraform code.
+This folder is the native Bicep workstream that sits alongside the existing Terraform code.
 
 ## What It Covers
 
-- Full SchoolGPT infrastructure in Bicep
-- Azure AI Foundry account and model deployment in Bicep
-- Dedicated GitHub Actions pipelines for validate, infra deploy, and full app deploy
-- Parameter examples for local or pipeline-driven deployments
+- full SchoolGPT infrastructure in native Bicep
+- Azure AI Foundry account and model deployment in native Bicep
+- step-by-step GitHub Actions workflows that call one Bicep file per component
 
-## Templates
+## Component Files
 
-- `main.bicep`: full SchoolGPT deployment at resource group scope
-- `ai-foundry.bicep`: AI Foundry-only deployment at resource group scope
-- `main.bicep`: full SchoolGPT deployment with native resource declarations
-- `ai-foundry.bicep`: AI Foundry-only deployment with native resource declarations
+- `components/01-monitoring.bicep`
+- `components/02-security.bicep`
+- `components/03-data.bicep`
+- `components/04-ai-foundry.bicep`
+- `components/05-app-service.bicep`
+- `components/06-app-config.bicep`
 
 ## Deployment Model
 
-The Bicep path is designed for pipelines first. The workflows create the resource group up front, then deploy these native Bicep files at resource group scope.
+The pipelines create the resource group first, generate the shared resource names once, and then deploy each component in order.
 
-- `B01 - Deploy AI Foundry (Bicep)`: deploy or update only AI Foundry
-- `B02 - Deploy Infrastructure (Bicep)`: deploy the full infrastructure stack
-- `B03 - Deploy Full App (Bicep)`: deploy infrastructure and then publish the app package to the provisioned web app
+- `B01 - Deploy AI Foundry (Bicep)`: deploy only the AI Foundry component
+- `B02 - Deploy Infrastructure (Bicep)`: deploy all infrastructure components in sequence
+- `B03 - Deploy Full App (Bicep)`: deploy infrastructure components, then build and publish the app
 
 ## Notes
 
 - Terraform remains in the repo and is not replaced.
-- The Bicep workflow can either deploy AI Foundry itself or point the app at an existing AI Foundry resource.
-- The web app gets the `Cognitive Services OpenAI User` role assignment automatically when `autoGrantAiAccess` is enabled.
+- The Bicep path is pipeline-first and avoids Azure Verified Modules.
+- The app config step wires together AI Foundry, SQL, Application Insights, Key Vault, and App Service after the earlier components exist.

@@ -73,55 +73,16 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Validate AI Foundry template
+      - name: Create resource group
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
-            az group create \
-              --name "${{ github.event.inputs.resource_group_name }}" \
-              --location "${{ github.event.inputs.location }}"
+            az group create --name "${{ github.event.inputs.resource_group_name }}" --location "${{ github.event.inputs.location }}"
 
-            az deployment group validate \
-              --resource-group "${{ github.event.inputs.resource_group_name }}" \
-              --template-file "./bicep/ai-foundry.bicep" \
-              --parameters \
-                location="${{ github.event.inputs.location }}" \
-                schoolName="${{ github.event.inputs.school_name }}" \
-                environment="${{ github.event.inputs.environment }}" \
-                aiFoundryName="${{ github.event.inputs.ai_foundry_name }}" \
-                aiFoundryCustomSubdomain="${{ github.event.inputs.ai_foundry_custom_subdomain }}" \
-                aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" \
-                aiModelName="${{ github.event.inputs.ai_model_name }}" \
-                aiModelVersion="${{ github.event.inputs.ai_model_version }}" \
-                raiPolicyName="${{ github.event.inputs.rai_policy_name }}"
-
-      - name: Deploy AI Foundry
-        id: deploy
+      - name: Deploy AI Foundry component
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
-            DEPLOYMENT_NAME="b01-aif-${GITHUB_RUN_NUMBER}"
-            az group create \
-              --name "${{ github.event.inputs.resource_group_name }}" \
-              --location "${{ github.event.inputs.location }}"
-
-            az deployment group create \
-              --name "$DEPLOYMENT_NAME" \
-              --resource-group "${{ github.event.inputs.resource_group_name }}" \
-              --template-file "./bicep/ai-foundry.bicep" \
-              --parameters \
-                location="${{ github.event.inputs.location }}" \
-                schoolName="${{ github.event.inputs.school_name }}" \
-                environment="${{ github.event.inputs.environment }}" \
-                aiFoundryName="${{ github.event.inputs.ai_foundry_name }}" \
-                aiFoundryCustomSubdomain="${{ github.event.inputs.ai_foundry_custom_subdomain }}" \
-                aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" \
-                aiModelName="${{ github.event.inputs.ai_model_name }}" \
-                aiModelVersion="${{ github.event.inputs.ai_model_version }}" \
-                raiPolicyName="${{ github.event.inputs.rai_policy_name }}" \
-              --query properties.outputs > outputs.json
-
-            echo "AI Foundry outputs"
-            cat outputs.json
+            az deployment group create --name "b01-aifoundry-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/04-ai-foundry.bicep" --parameters location="${{ github.event.inputs.location }}" environment="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" aiFoundryName="${{ github.event.inputs.ai_foundry_name }}" aiFoundryCustomSubdomain="${{ github.event.inputs.ai_foundry_custom_subdomain }}" aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" aiModelName="${{ github.event.inputs.ai_model_name }}" aiModelVersion="${{ github.event.inputs.ai_model_version }}" raiPolicyName="${{ github.event.inputs.rai_policy_name }}"

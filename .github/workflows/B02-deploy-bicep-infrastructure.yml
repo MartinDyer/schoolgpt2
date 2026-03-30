@@ -42,11 +42,6 @@ on:
         required: false
         default: ''
         type: string
-      existing_ai_foundry_resource_name:
-        description: 'Existing AI Foundry resource name when deploy_ai_foundry is false'
-        required: false
-        default: ''
-        type: string
       ai_deployment_name:
         description: 'Azure OpenAI deployment name'
         required: true
@@ -90,64 +85,90 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Validate infrastructure template
+      - name: Generate deployment names
+        id: names
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
-            az group create \
-              --name "${{ github.event.inputs.resource_group_name }}" \
-              --location "${{ github.event.inputs.location }}"
+            PREFIX=$(printf "%s" "${{ github.event.inputs.name_prefix }}" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+            if [ -z "$PREFIX" ]; then PREFIX="schoolgpt"; fi
+            HASH=$(printf "%s" "${{ github.event.inputs.resource_group_name }}" | sha256sum | cut -c1-6)
+            COMPACT=$(printf "%s%s" "$PREFIX" "$HASH")
+            APP_SERVICE_PLAN_NAME="${PREFIX:0:20}-asp"
+            WEB_APP_NAME="${COMPACT:0:18}app"
+            APP_INSIGHTS_NAME="${PREFIX:0:18}-appi"
+            LOG_WORKSPACE_NAME="${PREFIX:0:18}-log"
+            KEY_VAULT_NAME="${COMPACT:0:22}kv"
+            SQL_SERVER_NAME="${COMPACT:0:20}sql"
+            AI_FOUNDRY_NAME="${COMPACT:0:20}ai"
+            AI_SUBDOMAIN_NAME="$AI_FOUNDRY_NAME"
+            if [ -n "${{ secrets.SQL_ADMIN_PASSWORD }}" ]; then
+              SQL_ADMIN_PASSWORD="${{ secrets.SQL_ADMIN_PASSWORD }}"
+            else
+              SQL_ADMIN_PASSWORD="Sql!$(printf "%s" "${{ github.event.inputs.resource_group_name }}${{ github.event.inputs.name_prefix }}" | sha256sum | cut -c1-16)Aa1"
+            fi
+            echo "::add-mask::$SQL_ADMIN_PASSWORD"
+            echo "app_service_plan_name=$APP_SERVICE_PLAN_NAME" >> $GITHUB_OUTPUT
+            echo "web_app_name=$WEB_APP_NAME" >> $GITHUB_OUTPUT
+            echo "app_insights_name=$APP_INSIGHTS_NAME" >> $GITHUB_OUTPUT
+            echo "log_workspace_name=$LOG_WORKSPACE_NAME" >> $GITHUB_OUTPUT
+            echo "key_vault_name=$KEY_VAULT_NAME" >> $GITHUB_OUTPUT
+            echo "sql_server_name=$SQL_SERVER_NAME" >> $GITHUB_OUTPUT
+            echo "ai_foundry_name=$AI_FOUNDRY_NAME" >> $GITHUB_OUTPUT
+            echo "ai_subdomain_name=$AI_SUBDOMAIN_NAME" >> $GITHUB_OUTPUT
+            echo "sql_admin_password=$SQL_ADMIN_PASSWORD" >> $GITHUB_OUTPUT
 
-            az deployment group validate \
-              --resource-group "${{ github.event.inputs.resource_group_name }}" \
-              --template-file "./bicep/main.bicep" \
-              --parameters \
-                location="${{ github.event.inputs.location }}" \
-                environment="${{ github.event.inputs.environment }}" \
-                schoolName="${{ github.event.inputs.school_name }}" \
-                namePrefix="${{ github.event.inputs.name_prefix }}" \
-                azureTenantId="${{ secrets.AZURE_TENANT_ID }}" \
-                keyVaultAdminObjectId="${{ secrets.KEY_VAULT_ADMIN_OBJECT_ID }}" \
-                deployAiFoundry=${{ github.event.inputs.deploy_ai_foundry }} \
-                existingAiFoundryEndpoint="${{ github.event.inputs.existing_ai_foundry_endpoint }}" \
-                existingAiFoundryResourceName="${{ github.event.inputs.existing_ai_foundry_resource_name }}" \
-                aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" \
-                aiModelName="${{ github.event.inputs.ai_model_name }}" \
-                aiModelVersion="${{ github.event.inputs.ai_model_version }}" \
-                appServiceSku="${{ github.event.inputs.app_service_sku }}" \
-                sqlSkuName="${{ github.event.inputs.sql_sku_name }}"
-
-      - name: Deploy infrastructure
+      - name: Create resource group
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
-            DEPLOYMENT_NAME="b02-infra-${GITHUB_RUN_NUMBER}"
-            az group create \
-              --name "${{ github.event.inputs.resource_group_name }}" \
-              --location "${{ github.event.inputs.location }}"
+            az group create --name "${{ github.event.inputs.resource_group_name }}" --location "${{ github.event.inputs.location }}"
 
-            az deployment group create \
-              --name "$DEPLOYMENT_NAME" \
-              --resource-group "${{ github.event.inputs.resource_group_name }}" \
-              --template-file "./bicep/main.bicep" \
-              --parameters \
-                location="${{ github.event.inputs.location }}" \
-                environment="${{ github.event.inputs.environment }}" \
-                schoolName="${{ github.event.inputs.school_name }}" \
-                namePrefix="${{ github.event.inputs.name_prefix }}" \
-                azureTenantId="${{ secrets.AZURE_TENANT_ID }}" \
-                keyVaultAdminObjectId="${{ secrets.KEY_VAULT_ADMIN_OBJECT_ID }}" \
-                deployAiFoundry=${{ github.event.inputs.deploy_ai_foundry }} \
-                existingAiFoundryEndpoint="${{ github.event.inputs.existing_ai_foundry_endpoint }}" \
-                existingAiFoundryResourceName="${{ github.event.inputs.existing_ai_foundry_resource_name }}" \
-                aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" \
-                aiModelName="${{ github.event.inputs.ai_model_name }}" \
-                aiModelVersion="${{ github.event.inputs.ai_model_version }}" \
-                appServiceSku="${{ github.event.inputs.app_service_sku }}" \
-                sqlSkuName="${{ github.event.inputs.sql_sku_name }}" \
-              --query properties.outputs > outputs.json
+      - name: Deploy monitoring
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment group create --name "b02-monitoring-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/01-monitoring.bicep" --parameters location="${{ github.event.inputs.location }}" environment="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" logAnalyticsWorkspaceName="${{ steps.names.outputs.log_workspace_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}"
 
-            echo "Infrastructure outputs"
-            cat outputs.json
+      - name: Deploy security
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment group create --name "b02-security-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/02-security.bicep" --parameters location="${{ github.event.inputs.location }}" environment="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" azureTenantId="${{ secrets.AZURE_TENANT_ID }}" keyVaultName="${{ steps.names.outputs.key_vault_name }}" keyVaultAdminObjectId="${{ secrets.KEY_VAULT_ADMIN_OBJECT_ID }}"
+
+      - name: Deploy data
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment group create --name "b02-data-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/03-data.bicep" --parameters location="${{ github.event.inputs.location }}" environment="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" sqlServerName="${{ steps.names.outputs.sql_server_name }}" sqlDatabaseName="schoolgptdb" sqlAdminLogin="sqladminuser" sqlAdminPassword="${{ steps.names.outputs.sql_admin_password }}" sqlSkuName="${{ github.event.inputs.sql_sku_name }}" sqlAzureAdAdminLogin="" sqlAzureAdAdminObjectId="" azureTenantId="${{ secrets.AZURE_TENANT_ID }}"
+
+      - name: Deploy AI Foundry
+        if: github.event.inputs.deploy_ai_foundry == 'true' || github.event.inputs.deploy_ai_foundry == true
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment group create --name "b02-aifoundry-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/04-ai-foundry.bicep" --parameters location="${{ github.event.inputs.location }}" environment="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" aiFoundryName="${{ steps.names.outputs.ai_foundry_name }}" aiFoundryCustomSubdomain="${{ steps.names.outputs.ai_subdomain_name }}" aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" aiModelName="${{ github.event.inputs.ai_model_name }}" aiModelVersion="${{ github.event.inputs.ai_model_version }}"
+
+      - name: Deploy app service
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment group create --name "b02-appservice-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/05-app-service.bicep" --parameters location="${{ github.event.inputs.location }}" environment="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" appServicePlanName="${{ steps.names.outputs.app_service_plan_name }}" appServiceSku="${{ github.event.inputs.app_service_sku }}" webAppName="${{ steps.names.outputs.web_app_name }}"
+
+      - name: Deploy app config
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            AI_FOUNDRY_NAME=""
+            if [ "${{ github.event.inputs.deploy_ai_foundry }}" = "true" ]; then
+              AI_FOUNDRY_NAME="${{ steps.names.outputs.ai_foundry_name }}"
+            fi
+            az deployment group create --name "b02-appconfig-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/06-app-config.bicep" --parameters webAppName="${{ steps.names.outputs.web_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" keyVaultName="${{ steps.names.outputs.key_vault_name }}" sqlServerName="${{ steps.names.outputs.sql_server_name }}" sqlDatabaseName="schoolgptdb" sqlAdminLogin="sqladminuser" sqlAdminPassword="${{ steps.names.outputs.sql_admin_password }}" aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" azureOpenAiApiVersion="2025-01-01-preview" deployAiFoundry=${{ github.event.inputs.deploy_ai_foundry }} aiFoundryName="$AI_FOUNDRY_NAME" existingAiFoundryEndpoint="${{ github.event.inputs.existing_ai_foundry_endpoint }}"
