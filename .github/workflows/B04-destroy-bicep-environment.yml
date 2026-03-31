@@ -1,0 +1,68 @@
+name: B04 - Destroy Bicep Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      resource_group_name:
+        description: 'Resource group to delete'
+        required: true
+        default: 'schoolgpt-production-rg'
+        type: string
+      location:
+        description: 'Azure region of the resource group'
+        required: true
+        default: 'uksouth'
+        type: string
+      confirm_destroy:
+        description: 'Type DELETE to confirm permanent deletion'
+        required: true
+        default: ''
+        type: string
+      wait_for_completion:
+        description: 'Wait until resource group deletion completes'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Validate destroy confirmation
+        shell: bash
+        run: |
+          if [ "${{ github.event.inputs.confirm_destroy }}" != "DELETE" ]; then
+            echo "confirm_destroy must be exactly DELETE"
+            exit 1
+          fi
+
+      - name: Show resource group
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az group show --name "${{ github.event.inputs.resource_group_name }}" --output json
+
+      - name: Delete resource group and all contained resources
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            if [ "${{ github.event.inputs.wait_for_completion }}" = "true" ]; then
+              az group delete --name "${{ github.event.inputs.resource_group_name }}" --yes
+            else
+              az group delete --name "${{ github.event.inputs.resource_group_name }}" --yes --no-wait
+            fi
