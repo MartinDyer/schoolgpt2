@@ -177,6 +177,43 @@ jobs:
             if [ "${{ github.event.inputs.deploy_ai_foundry }}" = "true" ]; then AI_FOUNDRY_NAME="${{ steps.names.outputs.ai_foundry_name }}"; fi
             az deployment group create --name "b03-appconfig-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/06-app-config.bicep" --parameters webAppName="${{ steps.names.outputs.web_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" keyVaultName="${{ steps.names.outputs.key_vault_name }}" sqlServerName="${{ steps.names.outputs.sql_server_name }}" sqlDatabaseName="schoolgptdb" sqlAdminLogin="sqladminuser" sqlAdminPassword="${{ steps.names.outputs.sql_admin_password }}" aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" azureOpenAiApiVersion="2025-01-01-preview" deployAiFoundry=${{ github.event.inputs.deploy_ai_foundry }} aiFoundryName="$AI_FOUNDRY_NAME" existingAiFoundryEndpoint="${{ github.event.inputs.existing_ai_foundry_endpoint }}"
 
+      - name: Register deployed app URL in Entra redirect URIs
+        shell: bash
+        run: |
+          FRONTEND_APP_CLIENT_ID=$(grep '^VITE_AZURE_CLIENT_ID=' app/Frontend/.env | cut -d= -f2- | tr -d '\r')
+          if [ -z "$FRONTEND_APP_CLIENT_ID" ]; then
+            echo "No VITE_AZURE_CLIENT_ID found in app/Frontend/.env"
+            exit 1
+          fi
+
+          SITE_URL="https://${{ steps.names.outputs.web_app_name }}.azurewebsites.net"
+          APP_OBJECT_ID=$(az ad app show --id "$FRONTEND_APP_CLIENT_ID" --query id -o tsv)
+
+          SPA_REDIRECT_URIS=$(
+            {
+              printf '%s\n' "$SITE_URL"
+              printf '%s/\n' "$SITE_URL"
+              az ad app show --id "$FRONTEND_APP_CLIENT_ID" --query "spa.redirectUris[]" -o tsv
+            } | grep -v '^$' | sort -u | jq -R . | jq -s .
+          )
+
+          WEB_REDIRECT_URIS=$(
+            {
+              printf '%s\n' "$SITE_URL"
+              az ad app show --id "$FRONTEND_APP_CLIENT_ID" --query "web.redirectUris[]" -o tsv
+            } | grep -v '^$' | sort -u | jq -R . | jq -s .
+          )
+
+          BODY=$(jq -cn --argjson spa "$SPA_REDIRECT_URIS" --argjson web "$WEB_REDIRECT_URIS" '{spa:{redirectUris:$spa},web:{redirectUris:$web}}')
+
+          az rest \
+            --method PATCH \
+            --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+            --headers "Content-Type=application/json" \
+            --body "$BODY"
+
+          echo "Registered redirect URIs for $SITE_URL"
+
   build-and-deploy:
     runs-on: ubuntu-latest
     needs: deploy-infrastructure

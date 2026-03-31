@@ -73,6 +73,15 @@ https://schoolgpttbeb39dapp.azurewebsites.net
 
 Without this, sign-in will fail with redirect URI mismatch.
 
+`B03 - Deploy Full App (Bicep)` now includes a workflow step that tries to add the deployed Azure Web App URL into the Entra app registration automatically.
+
+For that step to work, the service principal from `AZURE_CREDENTIALS` must be able to update the frontend Entra app registration.
+
+Recommended setup:
+
+1. make the deployment service principal an owner of the frontend Entra app registration
+2. keep `VITE_AZURE_CLIENT_ID` in `app/Frontend/.env` aligned with the app registration you want the workflow to update
+
 ## 6. Recommended First Run Order
 
 1. `B02 - Deploy Infrastructure (Bicep)`

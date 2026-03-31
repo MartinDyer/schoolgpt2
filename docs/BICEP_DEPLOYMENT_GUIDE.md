@@ -127,7 +127,18 @@ Current auth values in the repo include:
 
 The frontend MSAL config defaults the redirect URI to `window.location.origin`.
 
-That means after each deployment you must ensure the Entra app registration contains the deployed web app URL as a redirect URI.
+`B03 - Deploy Full App (Bicep)` now attempts to register the deployed Azure Web App URL automatically in the frontend Entra app registration redirect URIs.
+
+For that automation to work, the deployment principal from `AZURE_CREDENTIALS` must be able to update the Entra app registration used by the frontend.
+
+Usually that means one of these:
+
+1. the deployment service principal is an owner of the frontend Entra app registration
+2. the deployment service principal has sufficient Microsoft Graph application management permissions with admin consent
+
+If those permissions are missing, the app deployment will succeed up to infrastructure/app publish, but the redirect URI registration step will fail.
+
+That means after each deployment the Entra app registration must contain the deployed web app URL as a redirect URI, whether done automatically by the pipeline or manually.
 
 Example deployed URL:
 
@@ -299,6 +310,11 @@ The deployed web app URL is missing from the Entra app registration.
 Fix:
 
 Add the deployed URL to the app registration redirect URIs.
+
+If you use `B03`, the workflow now tries to do this automatically for both:
+
+1. `https://<webapp>.azurewebsites.net`
+2. `https://<webapp>.azurewebsites.net/`
 
 ### Existing AI Foundry endpoint mode
 
