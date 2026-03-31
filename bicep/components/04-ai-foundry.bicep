@@ -118,6 +118,9 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-
     }
     raiPolicyName: empty(raiPolicyName) ? null : raiPolicyName
   }
+  dependsOn: [
+    raiPolicy
+  ]
 }
 
 output aiFoundryName string = aiFoundry.name
