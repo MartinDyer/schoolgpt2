@@ -180,10 +180,11 @@ jobs:
       - name: Register deployed app URL in Entra redirect URIs
         shell: bash
         run: |
+          set +e
           FRONTEND_APP_CLIENT_ID=$(grep '^VITE_AZURE_CLIENT_ID=' app/Frontend/.env | cut -d= -f2- | tr -d '\r')
           if [ -z "$FRONTEND_APP_CLIENT_ID" ]; then
-            echo "No VITE_AZURE_CLIENT_ID found in app/Frontend/.env"
-            exit 1
+            echo "::warning::No VITE_AZURE_CLIENT_ID found in app/Frontend/.env. Skipping automatic redirect URI registration."
+            exit 0
           fi
 
           SITE_URL="https://${{ steps.names.outputs.web_app_name }}.azurewebsites.net"
@@ -211,6 +212,12 @@ jobs:
             --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
             --headers "Content-Type=application/json" \
             --body "$BODY"
+
+          STATUS=$?
+          if [ $STATUS -ne 0 ]; then
+            echo "::warning::Automatic Entra redirect URI registration failed. Check that the deployment service principal is an owner of the frontend app registration."
+            exit 0
+          fi
 
           echo "Registered redirect URIs for $SITE_URL"
 
