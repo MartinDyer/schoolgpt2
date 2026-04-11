@@ -7,6 +7,7 @@ param reportingStorageAccountName string
 param reportingPlanName string
 param reportingFunctionAppName string
 param appInsightsName string
+param reportingPlanSku string = 'B1'
 
 @secure()
 param sqlConnectionString string
@@ -62,10 +63,9 @@ resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: reportingPlanName
   location: location
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: reportingPlanSku
   }
-  kind: 'functionapp'
+  kind: 'linux'
   properties: {
     reserved: true
   }
@@ -90,6 +90,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     siteConfig: {
       linuxFxVersion: 'Python|3.11'
+      alwaysOn: true
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       appSettings: [

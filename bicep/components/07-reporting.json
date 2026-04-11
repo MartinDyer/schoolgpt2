@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "684663466815738318"
+      "templateHash": "6038618176928114799"
     }
   },
   "parameters": {
@@ -32,6 +32,10 @@
     },
     "appInsightsName": {
       "type": "string"
+    },
+    "reportingPlanSku": {
+      "type": "string",
+      "defaultValue": "B1"
     },
     "sqlConnectionString": {
       "type": "securestring"
@@ -144,10 +148,9 @@
       "name": "[parameters('reportingPlanName')]",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "Y1",
-        "tier": "Dynamic"
+        "name": "[parameters('reportingPlanSku')]"
       },
-      "kind": "functionapp",
+      "kind": "linux",
       "properties": {
         "reserved": true
       },
@@ -173,6 +176,7 @@
         "httpsOnly": true,
         "siteConfig": {
           "linuxFxVersion": "Python|3.11",
+          "alwaysOn": true,
           "ftpsState": "Disabled",
           "minTlsVersion": "1.2",
           "appSettings": [
