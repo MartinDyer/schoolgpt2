@@ -435,17 +435,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Package reporting function app
-        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
-        run: |
-          cd reporting
-          zip -r ../reporting-app.zip . -x ".venv/*" ".venv311/*" "tests/*" "__pycache__/*" ".pytest_cache/*" "local.settings.json"
-
       - name: Deploy reporting package to Azure Function App
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
         uses: Azure/functions-action@v1
         with:
           app-name: ${{ env.REPORTING_FUNCTION_APP_NAME }}
-          package: reporting-app.zip
+          package: ./reporting
           scm-do-build-during-deployment: true
           enable-oryx-build: true
