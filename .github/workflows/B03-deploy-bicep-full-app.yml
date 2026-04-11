@@ -291,67 +291,6 @@ jobs:
             REPORTING_EMAIL_FROM=$(az keyvault secret show --vault-name "${{ steps.names.outputs.key_vault_name }}" --name "reporting-email-from" --query value -o tsv)
             az deployment group create --name "b03-reporting-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/07-reporting.bicep" --parameters location="${{ github.event.inputs.location }}" environmentName="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" reportingStorageAccountName="${{ steps.reporting_names.outputs.reporting_storage_name }}" reportingPlanName="${{ steps.reporting_names.outputs.reporting_plan_name }}" reportingFunctionAppName="${{ steps.reporting_names.outputs.reporting_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" reportingPlanSku="${{ github.event.inputs.reporting_plan_sku }}" sqlConnectionString="Server=tcp:${{ steps.names.outputs.sql_server_name }}.database.windows.net,1433;Database=schoolgptdb;Uid=sqladminuser;Pwd=${{ steps.names.outputs.sql_admin_password }};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;" schoolTimezone="${{ github.event.inputs.school_timezone }}" dslEmail="${{ github.event.inputs.dsl_email }}" summaryEmails="" leadershipEmails="${{ github.event.inputs.leadership_emails }}" teacherSummaryEmails="${{ github.event.inputs.teacher_summary_emails }}" enableCsvExport=${{ github.event.inputs.enable_csv_export }} csvExportThreshold="${{ github.event.inputs.csv_export_threshold }}" emailProvider="azure_communication_services" acsConnectionString="$ACS_CONNECTION_STRING" emailFrom="$REPORTING_EMAIL_FROM"
 
-      - name: Register deployed app URL in Entra redirect URIs
-        shell: bash
-        run: |
-          set +e
-          FRONTEND_APP_CLIENT_ID=$(grep '^VITE_AZURE_CLIENT_ID=' app/Frontend/.env | cut -d= -f2- | tr -d '\r')
-          if [ -z "$FRONTEND_APP_CLIENT_ID" ]; then
-            echo "::warning::No VITE_AZURE_CLIENT_ID found in app/Frontend/.env. Skipping automatic redirect URI registration."
-            exit 0
-          fi
-
-          SITE_URL="https://${{ steps.names.outputs.web_app_name }}.azurewebsites.net"
-          APP_OBJECT_ID=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications(appId='${FRONTEND_APP_CLIENT_ID}')?$select=id" --query id -o tsv)
-
-          if [ -z "$APP_OBJECT_ID" ]; then
-            echo "::warning::Could not resolve frontend Entra app object ID from VITE_AZURE_CLIENT_ID. Skipping automatic redirect URI registration."
-            exit 0
-          fi
-
-          SPA_REDIRECT_URIS=$(
-            {
-              printf '%s\n' "$SITE_URL"
-              printf '%s/\n' "$SITE_URL"
-              az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=spa" --query "spa.redirectUris[]" -o tsv
-            } | grep -v '^$' | sort -u | jq -R . | jq -s .
-          )
-
-          WEB_REDIRECT_URIS=$(
-            {
-              printf '%s\n' "$SITE_URL"
-              printf '%s/\n' "$SITE_URL"
-              az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=web" --query "web.redirectUris[]" -o tsv
-            } | grep -v '^$' | sort -u | jq -R . | jq -s .
-          )
-
-          BODY=$(jq -cn --argjson spa "$SPA_REDIRECT_URIS" --argjson web "$WEB_REDIRECT_URIS" '{spa:{redirectUris:$spa},web:{redirectUris:$web}}')
-
-          az rest \
-            --method PATCH \
-            --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
-            --headers "Content-Type=application/json" \
-            --body "$BODY"
-
-          STATUS=$?
-          if [ $STATUS -ne 0 ]; then
-            echo "::warning::Automatic Entra redirect URI registration failed. Check that the deployment service principal is an owner of the frontend app registration."
-            exit 0
-          fi
-
-          FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=spa,web" -o json)
-          echo "$FINAL" | jq '{spa: .spa.redirectUris, web: .web.redirectUris}'
-
-          SPA_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.spa.redirectUris // []) | index($url) != null')
-          WEB_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.web.redirectUris // []) | index($url) != null')
-
-          if [ "$SPA_HAS_URL" != "true" ] || [ "$WEB_HAS_URL" != "true" ]; then
-            echo "::warning::Automatic redirect URI registration completed but the deployed URL was not present in both spa and web redirect URI lists."
-            exit 0
-          fi
-
-          echo "Registered redirect URIs for $SITE_URL"
-
   build-and-deploy:
     runs-on: ubuntu-latest
     needs: deploy-infrastructure
@@ -407,6 +346,81 @@ jobs:
         with:
           app-name: ${{ env.WEB_APP_NAME }}
           package: backend-app.zip
+
+      - name: Register deployed app URL in Entra redirect URIs
+        shell: bash
+        run: |
+          set +e
+          FRONTEND_APP_CLIENT_ID=$(grep '^VITE_AZURE_CLIENT_ID=' app/Frontend/.env | cut -d= -f2- | tr -d '\r')
+          if [ -z "$FRONTEND_APP_CLIENT_ID" ]; then
+            echo "::warning::No VITE_AZURE_CLIENT_ID found in app/Frontend/.env. Skipping automatic redirect URI registration."
+            exit 0
+          fi
+
+          SITE_URL="https://${{ env.WEB_APP_NAME }}.azurewebsites.net"
+          APP_OBJECT_ID=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications(appId='${FRONTEND_APP_CLIENT_ID}')?$select=id" --query id -o tsv)
+
+          if [ -z "$APP_OBJECT_ID" ]; then
+            echo "::warning::Could not resolve frontend Entra app object ID from VITE_AZURE_CLIENT_ID. Skipping automatic redirect URI registration."
+            exit 0
+          fi
+
+          CURRENT=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=spa,web" -o json)
+
+          SPA_REDIRECT_URIS=$(
+            {
+              printf '%s\n' "$SITE_URL"
+              printf '%s/\n' "$SITE_URL"
+              echo "$CURRENT" | jq -r '.spa.redirectUris[]?'
+            } | grep -v '^$' | sort -u | jq -R . | jq -s .
+          )
+
+          WEB_REDIRECT_URIS=$(
+            {
+              printf '%s\n' "$SITE_URL"
+              printf '%s/\n' "$SITE_URL"
+              echo "$CURRENT" | jq -r '.web.redirectUris[]?'
+            } | grep -v '^$' | sort -u | jq -R . | jq -s .
+          )
+
+          WEB_IMPLICIT=$(echo "$CURRENT" | jq '.web.implicitGrantSettings // {enableAccessTokenIssuance:true,enableIdTokenIssuance:true}')
+
+          SPA_BODY=$(jq -cn --argjson spa "$SPA_REDIRECT_URIS" '{spa:{redirectUris:$spa}}')
+          WEB_BODY=$(jq -cn --argjson web "$WEB_REDIRECT_URIS" --argjson implicit "$WEB_IMPLICIT" '{web:{redirectUris:$web,implicitGrantSettings:$implicit}}')
+
+          az rest \
+            --method PATCH \
+            --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+            --headers "Content-Type=application/json" \
+            --body "$SPA_BODY"
+
+          SPA_STATUS=$?
+
+          az rest \
+            --method PATCH \
+            --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
+            --headers "Content-Type=application/json" \
+            --body "$WEB_BODY"
+
+          WEB_STATUS=$?
+
+          if [ $SPA_STATUS -ne 0 ] || [ $WEB_STATUS -ne 0 ]; then
+            echo "::warning::Automatic Entra redirect URI registration failed. Check that the deployment service principal is an owner of the frontend app registration."
+            exit 0
+          fi
+
+          FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=spa,web" -o json)
+          echo "$FINAL" | jq '{spa: .spa.redirectUris, web: .web.redirectUris}'
+
+          SPA_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.spa.redirectUris // []) | index($url) != null')
+          WEB_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.web.redirectUris // []) | index($url) != null')
+
+          if [ "$SPA_HAS_URL" != "true" ] || [ "$WEB_HAS_URL" != "true" ]; then
+            echo "::warning::Automatic redirect URI registration completed but the deployed URL was not present in both spa and web redirect URI lists."
+            exit 0
+          fi
+
+          echo "Registered redirect URIs for $SITE_URL"
 
       - name: Set up Python for reporting deploy
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
