@@ -23,6 +23,7 @@ This document describes the separate safeguarding reporting layer introduced for
 - `LEADERSHIP_EMAILS` (optional)
 - `ENABLE_CSV_EXPORT`
 - `CSV_EXPORT_THRESHOLD`
+- `REPORTING_PLAN_SKU` (recommended default: `B1`)
 - SQL connection string with reporting read access
 - Email provider configuration
 - Existing Application Insights resource from the base SchoolGPT deployment
@@ -61,6 +62,20 @@ B03 will then:
 - publish the reporting package to the Function App
 
 This keeps reporting as a **separate layer**, but makes setup easier by configuring it during the normal school deployment flow.
+
+## Hosting compatibility recommendation
+
+For broad compatibility across many schools and Azure environments, the reporting layer should use a **dedicated Linux App Service plan** by default rather than Linux Consumption.
+
+Recommended default:
+
+- `REPORTING_PLAN_SKU=B1`
+
+Why:
+
+- avoids `LinuxDynamicWorkersNotAllowedInResourceGroup` failures
+- works more consistently across school subscriptions and policy setups
+- keeps reporting as a separate layer without changing the overall architecture
 
 ## Automated ACS handling in B03
 
