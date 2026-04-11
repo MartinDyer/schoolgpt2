@@ -67,6 +67,41 @@ on:
         required: true
         default: 'S1'
         type: string
+      enable_reporting:
+        description: 'Deploy separate safeguarding reporting layer'
+        required: true
+        default: true
+        type: boolean
+      school_timezone:
+        description: 'IANA timezone for reporting outputs'
+        required: true
+        default: 'Europe/London'
+        type: string
+      dsl_email:
+        description: 'Primary DSL recipient email for safeguarding reports'
+        required: false
+        default: ''
+        type: string
+      teacher_summary_emails:
+        description: 'Comma-separated teacher summary recipients'
+        required: false
+        default: ''
+        type: string
+      leadership_emails:
+        description: 'Comma-separated leadership summary recipients'
+        required: false
+        default: ''
+        type: string
+      enable_csv_export:
+        description: 'Attach CSV when safeguarding incidents exceed threshold'
+        required: true
+        default: true
+        type: boolean
+      csv_export_threshold:
+        description: 'CSV attachment threshold for safeguarding reports'
+        required: true
+        default: '10'
+        type: string
 
 permissions:
   id-token: write
@@ -81,6 +116,7 @@ jobs:
     outputs:
       web_app_name: ${{ steps.names.outputs.web_app_name }}
       resource_group_name: ${{ github.event.inputs.resource_group_name }}
+      reporting_function_app_name: ${{ steps.reporting_names.outputs.reporting_app_name }}
 
     steps:
       - name: Checkout code
@@ -124,6 +160,23 @@ jobs:
             echo "ai_foundry_name=$AI_FOUNDRY_NAME" >> $GITHUB_OUTPUT
             echo "ai_subdomain_name=$AI_SUBDOMAIN_NAME" >> $GITHUB_OUTPUT
             echo "sql_admin_password=$SQL_ADMIN_PASSWORD" >> $GITHUB_OUTPUT
+
+      - name: Generate reporting names
+        id: reporting_names
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            PREFIX=$(printf "%s" "${{ github.event.inputs.name_prefix }}" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+            if [ -z "$PREFIX" ]; then PREFIX="schoolgpt"; fi
+            HASH=$(printf "%s" "${{ github.event.inputs.resource_group_name }}" | sha256sum | cut -c1-6)
+            COMPACT=$(printf "%s%s" "$PREFIX" "$HASH")
+            REPORTING_STORAGE_NAME="${COMPACT:0:18}rptsa"
+            REPORTING_PLAN_NAME="${PREFIX:0:18}-rpt-plan"
+            REPORTING_APP_NAME="${COMPACT:0:18}rpt"
+            echo "reporting_storage_name=$REPORTING_STORAGE_NAME" >> $GITHUB_OUTPUT
+            echo "reporting_plan_name=$REPORTING_PLAN_NAME" >> $GITHUB_OUTPUT
+            echo "reporting_app_name=$REPORTING_APP_NAME" >> $GITHUB_OUTPUT
 
       - name: Create resource group
         uses: azure/cli@v2
@@ -176,6 +229,14 @@ jobs:
             AI_FOUNDRY_NAME=""
             if [ "${{ github.event.inputs.deploy_ai_foundry }}" = "true" ]; then AI_FOUNDRY_NAME="${{ steps.names.outputs.ai_foundry_name }}"; fi
             az deployment group create --name "b03-appconfig-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/06-app-config.bicep" --parameters webAppName="${{ steps.names.outputs.web_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" keyVaultName="${{ steps.names.outputs.key_vault_name }}" sqlServerName="${{ steps.names.outputs.sql_server_name }}" sqlDatabaseName="schoolgptdb" sqlAdminLogin="sqladminuser" sqlAdminPassword="${{ steps.names.outputs.sql_admin_password }}" aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" azureOpenAiApiVersion="2025-01-01-preview" deployAiFoundry=${{ github.event.inputs.deploy_ai_foundry }} aiFoundryName="$AI_FOUNDRY_NAME" existingAiFoundryEndpoint="${{ github.event.inputs.existing_ai_foundry_endpoint }}"
+
+      - name: Deploy reporting infrastructure
+        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment group create --name "b03-reporting-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/07-reporting.bicep" --parameters location="${{ github.event.inputs.location }}" environmentName="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" reportingStorageAccountName="${{ steps.reporting_names.outputs.reporting_storage_name }}" reportingPlanName="${{ steps.reporting_names.outputs.reporting_plan_name }}" reportingFunctionAppName="${{ steps.reporting_names.outputs.reporting_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" sqlConnectionString="Server=tcp:${{ steps.names.outputs.sql_server_name }}.database.windows.net,1433;Database=schoolgptdb;Uid=sqladminuser;Pwd=${{ steps.names.outputs.sql_admin_password }};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;" schoolTimezone="${{ github.event.inputs.school_timezone }}" dslEmail="${{ github.event.inputs.dsl_email }}" summaryEmails="" leadershipEmails="${{ github.event.inputs.leadership_emails }}" teacherSummaryEmails="${{ github.event.inputs.teacher_summary_emails }}" enableCsvExport=${{ github.event.inputs.enable_csv_export }} csvExportThreshold="${{ github.event.inputs.csv_export_threshold }}" emailProvider="azure_communication_services" acsConnectionString="${{ secrets.ACS_CONNECTION_STRING }}" emailFrom="${{ secrets.REPORTING_EMAIL_FROM }}"
 
       - name: Register deployed app URL in Entra redirect URIs
         shell: bash
@@ -244,6 +305,7 @@ jobs:
     env:
       WEB_APP_NAME: ${{ needs.deploy-infrastructure.outputs.web_app_name }}
       RESOURCE_GROUP_NAME: ${{ needs.deploy-infrastructure.outputs.resource_group_name }}
+      REPORTING_FUNCTION_APP_NAME: ${{ needs.deploy-infrastructure.outputs.reporting_function_app_name }}
 
     steps:
       - name: Checkout code
@@ -292,3 +354,31 @@ jobs:
         with:
           app-name: ${{ env.WEB_APP_NAME }}
           package: backend-app.zip
+
+      - name: Set up Python for reporting deploy
+        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install reporting dependencies for validation
+        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
+        working-directory: ./reporting
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Package reporting function app
+        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
+        run: |
+          cd reporting
+          zip -r ../reporting-app.zip . -x ".venv/*" ".venv311/*" "tests/*" "__pycache__/*" ".pytest_cache/*" "local.settings.json"
+
+      - name: Deploy reporting package to Azure Function App
+        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.REPORTING_FUNCTION_APP_NAME }}
+          package: reporting-app.zip
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
