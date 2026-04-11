@@ -1,0 +1,200 @@
+name: B05 - Deploy Reporting Functions (Bicep)
+
+on:
+  workflow_dispatch:
+    inputs:
+      resource_group_name:
+        description: 'Target resource group name'
+        required: true
+        default: 'schoolgpt-production-rg'
+        type: string
+      location:
+        description: 'Azure region'
+        required: true
+        default: 'uksouth'
+        type: string
+      school_name:
+        description: 'School name used in tags'
+        required: true
+        default: 'Example School'
+        type: string
+      environment:
+        description: 'Environment name'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+      name_prefix:
+        description: 'Short safe prefix for generated names'
+        required: true
+        default: 'schoolgpt'
+        type: string
+      school_timezone:
+        description: 'IANA timezone for report rendering'
+        required: true
+        default: 'Europe/London'
+        type: string
+      dsl_email:
+        description: 'Primary DSL recipient email'
+        required: true
+        default: 'dsl@example-school.edu'
+        type: string
+      summary_emails:
+        description: 'Comma-separated aggregate summary recipients'
+        required: false
+        default: ''
+        type: string
+      leadership_emails:
+        description: 'Comma-separated anonymised leadership summary recipients'
+        required: false
+        default: ''
+        type: string
+      teacher_summary_emails:
+        description: 'Comma-separated teacher summary recipients'
+        required: false
+        default: ''
+        type: string
+      enable_csv_export:
+        description: 'Attach CSV when flagged incidents exceed threshold'
+        required: true
+        default: true
+        type: boolean
+      csv_export_threshold:
+        description: 'CSV attachment threshold for safeguarding incident count'
+        required: true
+        default: '10'
+        type: string
+      email_provider:
+        description: 'Email provider for reporting delivery'
+        required: true
+        default: 'azure_communication_services'
+        type: choice
+        options:
+          - azure_communication_services
+          - mock
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-reporting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install reporting dependencies
+        working-directory: ./reporting
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run reporting unit tests
+        working-directory: ./reporting
+        env:
+          SQL_CONNECTION_STRING: 'Driver=test'
+          SCHOOL_NAME: ${{ github.event.inputs.school_name }}
+          SCHOOL_TIMEZONE: ${{ github.event.inputs.school_timezone }}
+          DSL_EMAIL: ${{ github.event.inputs.dsl_email }}
+          SUMMARY_EMAILS: ${{ github.event.inputs.summary_emails }}
+          LEADERSHIP_EMAILS: ${{ github.event.inputs.leadership_emails }}
+          TEACHER_SUMMARY_EMAILS: ${{ github.event.inputs.teacher_summary_emails }}
+          ENABLE_CSV_EXPORT: ${{ github.event.inputs.enable_csv_export }}
+          CSV_EXPORT_THRESHOLD: ${{ github.event.inputs.csv_export_threshold }}
+          EMAIL_PROVIDER: mock
+          EMAIL_FROM: no-reply@example-school.edu
+          ACS_CONNECTION_STRING: endpoint=https://example/;accesskey=test
+          DSL_REPORT_SCHEDULE: '0 0 7 * * *'
+          USAGE_REPORT_SCHEDULE: '0 0 8 * * *'
+          KEYWORD_REPORT_SCHEDULE: '0 0 7 * * 1'
+          LEADERSHIP_REPORT_SCHEDULE: '0 0 9 * * 1'
+          TEACHER_SUMMARY_SCHEDULE: '0 30 8 * * 1-5'
+          RETENTION_REPORT_SCHEDULE: '0 0 3 * * 0'
+          REPORTING_INITIAL_WATERMARK: '2026-01-01T00:00:00Z'
+          KEYWORD_WATCH_TERMS: 'self-harm,violence,abuse'
+          DSL_MIN_SEVERITY: medium
+          REPORTING_AUDIT_RETENTION_DAYS: '90'
+        run: pytest tests/unit tests/integration
+
+      - name: Generate deployment names
+        id: names
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            PREFIX=$(printf "%s" "${{ github.event.inputs.name_prefix }}" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9')
+            if [ -z "$PREFIX" ]; then PREFIX="schoolgpt"; fi
+            HASH=$(printf "%s" "${{ github.event.inputs.resource_group_name }}" | sha256sum | cut -c1-6)
+            COMPACT=$(printf "%s%s" "$PREFIX" "$HASH")
+            REPORTING_STORAGE="${COMPACT:0:18}rptsa"
+            REPORTING_PLAN="${PREFIX:0:18}-rpt-plan"
+            REPORTING_APP="${COMPACT:0:18}rpt"
+            APP_INSIGHTS_NAME="${PREFIX:0:18}-appi"
+            echo "reporting_storage=$REPORTING_STORAGE" >> $GITHUB_OUTPUT
+            echo "reporting_plan=$REPORTING_PLAN" >> $GITHUB_OUTPUT
+            echo "reporting_app=$REPORTING_APP" >> $GITHUB_OUTPUT
+            echo "app_insights_name=$APP_INSIGHTS_NAME" >> $GITHUB_OUTPUT
+
+      - name: Validate reporting Bicep
+        run: az bicep build --file ./bicep/components/07-reporting.bicep
+
+      - name: Deploy reporting infrastructure
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az deployment group create \
+              --name "b05-reporting-${GITHUB_RUN_NUMBER}" \
+              --resource-group "${{ github.event.inputs.resource_group_name }}" \
+              --template-file "./bicep/components/07-reporting.bicep" \
+              --parameters \
+                location="${{ github.event.inputs.location }}" \
+                environmentName="${{ github.event.inputs.environment }}" \
+                schoolName="${{ github.event.inputs.school_name }}" \
+                reportingStorageAccountName="${{ steps.names.outputs.reporting_storage }}" \
+                reportingPlanName="${{ steps.names.outputs.reporting_plan }}" \
+                reportingFunctionAppName="${{ steps.names.outputs.reporting_app }}" \
+                appInsightsName="${{ steps.names.outputs.app_insights_name }}" \
+                sqlConnectionString="${{ secrets.SQL_CONNECTION_STRING }}" \
+                schoolTimezone="${{ github.event.inputs.school_timezone }}" \
+                dslEmail="${{ github.event.inputs.dsl_email }}" \
+                summaryEmails="${{ github.event.inputs.summary_emails }}" \
+                leadershipEmails="${{ github.event.inputs.leadership_emails }}" \
+                teacherSummaryEmails="${{ github.event.inputs.teacher_summary_emails }}" \
+                enableCsvExport=${{ github.event.inputs.enable_csv_export }} \
+                csvExportThreshold="${{ github.event.inputs.csv_export_threshold }}" \
+                emailProvider="${{ github.event.inputs.email_provider }}" \
+                emailProviderApiKey="${{ secrets.REPORTING_EMAIL_PROVIDER_API_KEY }}" \
+                acsConnectionString="${{ secrets.ACS_CONNECTION_STRING }}" \
+                leadershipReportSchedule="0 0 9 * * 1" \
+                teacherSummarySchedule="0 30 8 * * 1-5" \
+                retentionReportSchedule="0 0 3 * * 0" \
+                reportingAuditRetentionDays="90"
+
+      - name: Publish reporting functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ steps.names.outputs.reporting_app }}
+          package: ./reporting
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
+
+      - name: Publish deployment outputs
+        run: |
+          echo "Reporting Function App: ${{ steps.names.outputs.reporting_app }}"
+          echo "Reporting Storage Account: ${{ steps.names.outputs.reporting_storage }}"
+          echo "Reporting Plan: ${{ steps.names.outputs.reporting_plan }}"

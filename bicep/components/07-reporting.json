@@ -1,0 +1,318 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.41.2.15936",
+      "templateHash": "684663466815738318"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "production"
+    },
+    "schoolName": {
+      "type": "string",
+      "defaultValue": "SchoolGPT"
+    },
+    "reportingStorageAccountName": {
+      "type": "string"
+    },
+    "reportingPlanName": {
+      "type": "string"
+    },
+    "reportingFunctionAppName": {
+      "type": "string"
+    },
+    "appInsightsName": {
+      "type": "string"
+    },
+    "sqlConnectionString": {
+      "type": "securestring"
+    },
+    "schoolTimezone": {
+      "type": "string",
+      "defaultValue": "Europe/London"
+    },
+    "dslEmail": {
+      "type": "string"
+    },
+    "summaryEmails": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "leadershipEmails": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "teacherSummaryEmails": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "enableCsvExport": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "csvExportThreshold": {
+      "type": "int",
+      "defaultValue": 10
+    },
+    "emailProvider": {
+      "type": "string",
+      "defaultValue": "azure_communication_services"
+    },
+    "emailProviderApiKey": {
+      "type": "securestring",
+      "defaultValue": ""
+    },
+    "acsConnectionString": {
+      "type": "securestring",
+      "defaultValue": ""
+    },
+    "emailFrom": {
+      "type": "string",
+      "defaultValue": "noreply@schoolgpt.local"
+    },
+    "dslReportSchedule": {
+      "type": "string",
+      "defaultValue": "0 0 7 * * *"
+    },
+    "usageReportSchedule": {
+      "type": "string",
+      "defaultValue": "0 0 8 * * *"
+    },
+    "keywordReportSchedule": {
+      "type": "string",
+      "defaultValue": "0 0 7 * * 1"
+    },
+    "leadershipReportSchedule": {
+      "type": "string",
+      "defaultValue": "0 0 9 * * 1"
+    },
+    "teacherSummarySchedule": {
+      "type": "string",
+      "defaultValue": "0 30 8 * * 1-5"
+    },
+    "retentionReportSchedule": {
+      "type": "string",
+      "defaultValue": "0 0 3 * * 0"
+    },
+    "reportingInitialWatermark": {
+      "type": "string",
+      "defaultValue": "2026-01-01T00:00:00Z"
+    },
+    "keywordWatchTerms": {
+      "type": "string",
+      "defaultValue": "self-harm,violence,abuse"
+    },
+    "dslMinSeverity": {
+      "type": "string",
+      "defaultValue": "medium"
+    },
+    "reportingAuditRetentionDays": {
+      "type": "int",
+      "defaultValue": 90
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('reportingStorageAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "tags": {
+        "Environment": "[parameters('environmentName')]",
+        "School": "[parameters('schoolName')]",
+        "Project": "SchoolGPT",
+        "Component": "Reporting-Storage",
+        "ManagedBy": "Bicep"
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-12-01",
+      "name": "[parameters('reportingPlanName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      },
+      "kind": "functionapp",
+      "properties": {
+        "reserved": true
+      },
+      "tags": {
+        "Environment": "[parameters('environmentName')]",
+        "School": "[parameters('schoolName')]",
+        "Project": "SchoolGPT",
+        "Component": "Reporting-Plan",
+        "ManagedBy": "Bicep"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-12-01",
+      "name": "[parameters('reportingFunctionAppName')]",
+      "location": "[parameters('location')]",
+      "kind": "functionapp,linux",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('reportingPlanName'))]",
+        "httpsOnly": true,
+        "siteConfig": {
+          "linuxFxVersion": "Python|3.11",
+          "ftpsState": "Disabled",
+          "minTlsVersion": "1.2",
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', parameters('reportingStorageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('reportingStorageAccountName')), '2023-05-01').keys[0].value, environment().suffixes.storage)]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "python"
+            },
+            {
+              "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+              "value": "true"
+            },
+            {
+              "name": "SQL_CONNECTION_STRING",
+              "value": "[parameters('sqlConnectionString')]"
+            },
+            {
+              "name": "SCHOOL_NAME",
+              "value": "[parameters('schoolName')]"
+            },
+            {
+              "name": "SCHOOL_TIMEZONE",
+              "value": "[parameters('schoolTimezone')]"
+            },
+            {
+              "name": "DSL_EMAIL",
+              "value": "[parameters('dslEmail')]"
+            },
+            {
+              "name": "SUMMARY_EMAILS",
+              "value": "[parameters('summaryEmails')]"
+            },
+            {
+              "name": "LEADERSHIP_EMAILS",
+              "value": "[parameters('leadershipEmails')]"
+            },
+            {
+              "name": "TEACHER_SUMMARY_EMAILS",
+              "value": "[parameters('teacherSummaryEmails')]"
+            },
+            {
+              "name": "ENABLE_CSV_EXPORT",
+              "value": "[string(parameters('enableCsvExport'))]"
+            },
+            {
+              "name": "CSV_EXPORT_THRESHOLD",
+              "value": "[string(parameters('csvExportThreshold'))]"
+            },
+            {
+              "name": "EMAIL_PROVIDER",
+              "value": "[parameters('emailProvider')]"
+            },
+            {
+              "name": "EMAIL_PROVIDER_API_KEY",
+              "value": "[parameters('emailProviderApiKey')]"
+            },
+            {
+              "name": "ACS_CONNECTION_STRING",
+              "value": "[parameters('acsConnectionString')]"
+            },
+            {
+              "name": "EMAIL_FROM",
+              "value": "[parameters('emailFrom')]"
+            },
+            {
+              "name": "DSL_REPORT_SCHEDULE",
+              "value": "[parameters('dslReportSchedule')]"
+            },
+            {
+              "name": "USAGE_REPORT_SCHEDULE",
+              "value": "[parameters('usageReportSchedule')]"
+            },
+            {
+              "name": "KEYWORD_REPORT_SCHEDULE",
+              "value": "[parameters('keywordReportSchedule')]"
+            },
+            {
+              "name": "LEADERSHIP_REPORT_SCHEDULE",
+              "value": "[parameters('leadershipReportSchedule')]"
+            },
+            {
+              "name": "TEACHER_SUMMARY_SCHEDULE",
+              "value": "[parameters('teacherSummarySchedule')]"
+            },
+            {
+              "name": "RETENTION_REPORT_SCHEDULE",
+              "value": "[parameters('retentionReportSchedule')]"
+            },
+            {
+              "name": "REPORTING_INITIAL_WATERMARK",
+              "value": "[parameters('reportingInitialWatermark')]"
+            },
+            {
+              "name": "KEYWORD_WATCH_TERMS",
+              "value": "[parameters('keywordWatchTerms')]"
+            },
+            {
+              "name": "DSL_MIN_SEVERITY",
+              "value": "[parameters('dslMinSeverity')]"
+            },
+            {
+              "name": "REPORTING_AUDIT_RETENTION_DAYS",
+              "value": "[string(parameters('reportingAuditRetentionDays'))]"
+            },
+            {
+              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('appInsightsName')), '2020-02-02').ConnectionString]"
+            }
+          ]
+        }
+      },
+      "tags": {
+        "Environment": "[parameters('environmentName')]",
+        "School": "[parameters('schoolName')]",
+        "Project": "SchoolGPT",
+        "Component": "Reporting-Function",
+        "ManagedBy": "Bicep",
+        "Purpose": "Safeguarding Reporting"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('reportingPlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('reportingStorageAccountName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "reportingFunctionAppName": {
+      "type": "string",
+      "value": "[parameters('reportingFunctionAppName')]"
+    },
+    "reportingFunctionPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('reportingFunctionAppName')), '2023-12-01', 'full').identity.principalId]"
+    },
+    "reportingStorageAccountName": {
+      "type": "string",
+      "value": "[parameters('reportingStorageAccountName')]"
+    }
+  }
+}
