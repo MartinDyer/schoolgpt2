@@ -75,6 +75,11 @@ on:
         options:
           - azure_communication_services
           - mock
+      reporting_plan_sku:
+        description: 'Dedicated App Service plan SKU for reporting layer'
+        required: true
+        default: 'B1'
+        type: string
 
 permissions:
   id-token: write
@@ -169,6 +174,7 @@ jobs:
                 reportingPlanName="${{ steps.names.outputs.reporting_plan }}" \
                 reportingFunctionAppName="${{ steps.names.outputs.reporting_app }}" \
                 appInsightsName="${{ steps.names.outputs.app_insights_name }}" \
+                reportingPlanSku="${{ github.event.inputs.reporting_plan_sku }}" \
                 sqlConnectionString="${{ secrets.SQL_CONNECTION_STRING }}" \
                 schoolTimezone="${{ github.event.inputs.school_timezone }}" \
                 dslEmail="${{ github.event.inputs.dsl_email }}" \
