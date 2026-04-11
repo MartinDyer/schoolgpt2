@@ -1,0 +1,20 @@
+<html>
+  <body>
+    <meta charset="utf-8" />
+    <h1>{{ school_name }} safeguarding incidents</h1>
+    <p>Detailed DSL-only safeguarding review for new incidents.</p>
+    <ul>
+    {% for incident in incidents %}
+      <li>
+        <strong>{{ incident.display_name }}</strong>
+        — {{ incident.filter_type }} / {{ incident.severity }}
+        — {{ incident.timestamp|localtime(school_timezone) }}
+        <br />
+        Action: {{ incident.action_taken }}
+        <br />
+        Message: {{ incident.user_message[:200] }}{% if incident.user_message|length > 200 %}…{% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  </body>
+</html>

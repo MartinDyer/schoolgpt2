@@ -1,0 +1,1 @@
+"""SchoolGPT reporting package."""
