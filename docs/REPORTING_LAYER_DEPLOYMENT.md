@@ -25,7 +25,6 @@ This document describes the separate safeguarding reporting layer introduced for
 - `CSV_EXPORT_THRESHOLD`
 - SQL connection string with reporting read access
 - Email provider configuration
-- `ACS_CONNECTION_STRING` when using Azure Communication Services
 - Existing Application Insights resource from the base SchoolGPT deployment
 
 ## Runtime Notes
@@ -55,10 +54,33 @@ B03 will then:
 
 - deploy the main student app
 - deploy the separate reporting Function App
+- create/reuse Azure Communication Services email resources for reporting
+- generate the reporting sender address automatically
+- store `acs-connection-string` and `reporting-email-from` in Key Vault
 - push reporting app settings into Azure
 - publish the reporting package to the Function App
 
 This keeps reporting as a **separate layer**, but makes setup easier by configuring it during the normal school deployment flow.
+
+## Automated ACS handling in B03
+
+When reporting is enabled, B03 now automates the platform email setup:
+
+- creates or reuses the Azure Email Service
+- creates or reuses the Azure-managed domain (`AzureManagedDomain`)
+- creates or reuses the linked Communication Service
+- creates the `reporting` sender username
+- saves these Key Vault secrets automatically:
+  - `acs-connection-string`
+  - `reporting-email-from`
+
+So the school/team does **not** need to know those values manually before deployment.
+
+The only reporting values that should still be entered during deployment are the recipient emails:
+
+- `DSL_EMAIL` (required)
+- `TEACHER_SUMMARY_EMAILS` (optional)
+- `LEADERSHIP_EMAILS` (optional)
 
 ## Deployment Path
 
