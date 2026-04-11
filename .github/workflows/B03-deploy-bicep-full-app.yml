@@ -174,9 +174,13 @@ jobs:
             REPORTING_STORAGE_NAME="${COMPACT:0:18}rptsa"
             REPORTING_PLAN_NAME="${PREFIX:0:18}-rpt-plan"
             REPORTING_APP_NAME="${COMPACT:0:18}rpt"
+            REPORTING_EMAIL_SERVICE_NAME="${COMPACT:0:18}email"
+            REPORTING_COMM_SERVICE_NAME="${COMPACT:0:18}comm"
             echo "reporting_storage_name=$REPORTING_STORAGE_NAME" >> $GITHUB_OUTPUT
             echo "reporting_plan_name=$REPORTING_PLAN_NAME" >> $GITHUB_OUTPUT
             echo "reporting_app_name=$REPORTING_APP_NAME" >> $GITHUB_OUTPUT
+            echo "reporting_email_service_name=$REPORTING_EMAIL_SERVICE_NAME" >> $GITHUB_OUTPUT
+            echo "reporting_comm_service_name=$REPORTING_COMM_SERVICE_NAME" >> $GITHUB_OUTPUT
 
       - name: Create resource group
         uses: azure/cli@v2
@@ -230,13 +234,57 @@ jobs:
             if [ "${{ github.event.inputs.deploy_ai_foundry }}" = "true" ]; then AI_FOUNDRY_NAME="${{ steps.names.outputs.ai_foundry_name }}"; fi
             az deployment group create --name "b03-appconfig-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/06-app-config.bicep" --parameters webAppName="${{ steps.names.outputs.web_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" keyVaultName="${{ steps.names.outputs.key_vault_name }}" sqlServerName="${{ steps.names.outputs.sql_server_name }}" sqlDatabaseName="schoolgptdb" sqlAdminLogin="sqladminuser" sqlAdminPassword="${{ steps.names.outputs.sql_admin_password }}" aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" azureOpenAiApiVersion="2025-01-01-preview" deployAiFoundry=${{ github.event.inputs.deploy_ai_foundry }} aiFoundryName="$AI_FOUNDRY_NAME" existingAiFoundryEndpoint="${{ github.event.inputs.existing_ai_foundry_endpoint }}"
 
+      - name: Provision ACS and store reporting email secrets in Key Vault
+        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            if [ -z "${{ github.event.inputs.dsl_email }}" ]; then
+              echo "DSL email is required when reporting is enabled"
+              exit 1
+            fi
+
+            az extension add --name communication --upgrade --only-show-errors || true
+
+            RESOURCE_GROUP="${{ github.event.inputs.resource_group_name }}"
+            EMAIL_SERVICE_NAME="${{ steps.reporting_names.outputs.reporting_email_service_name }}"
+            COMM_SERVICE_NAME="${{ steps.reporting_names.outputs.reporting_comm_service_name }}"
+            KEY_VAULT_NAME="${{ steps.names.outputs.key_vault_name }}"
+            DOMAIN_NAME="AzureManagedDomain"
+            SENDER_USERNAME="reporting"
+            SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+
+            az communication email show --name "$EMAIL_SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1 || \
+              az communication email create --name "$EMAIL_SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --location global --data-location Europe --only-show-errors
+
+            az communication email domain show -g "$RESOURCE_GROUP" --email-service-name "$EMAIL_SERVICE_NAME" --domain-name "$DOMAIN_NAME" --only-show-errors >/dev/null 2>&1 || \
+              az communication email domain create -g "$RESOURCE_GROUP" --email-service-name "$EMAIL_SERVICE_NAME" --domain-name "$DOMAIN_NAME" --location global --domain-management AzureManaged --user-engmnt-tracking Disabled --only-show-errors
+
+            DOMAIN_RESOURCE_ID="/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Communication/emailServices/$EMAIL_SERVICE_NAME/domains/$DOMAIN_NAME"
+
+            az communication show --name "$COMM_SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1 || \
+              az communication create --name "$COMM_SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --location global --data-location Europe --linked-domains "$DOMAIN_RESOURCE_ID" --only-show-errors
+
+            az communication email domain sender-username show -g "$RESOURCE_GROUP" --email-service-name "$EMAIL_SERVICE_NAME" --domain-name "$DOMAIN_NAME" --sender-username "$SENDER_USERNAME" --only-show-errors >/dev/null 2>&1 || \
+              az communication email domain sender-username create -g "$RESOURCE_GROUP" --email-service-name "$EMAIL_SERVICE_NAME" --domain-name "$DOMAIN_NAME" --sender-username "$SENDER_USERNAME" --username "$SENDER_USERNAME" --display-name "SchoolGPT Reporting" --only-show-errors
+
+            ACS_CONNECTION_STRING=$(az communication list-key --name "$COMM_SERVICE_NAME" --resource-group "$RESOURCE_GROUP" --query primaryConnectionString -o tsv)
+            ACS_DOMAIN=$(az resource show --ids "$DOMAIN_RESOURCE_ID" --query properties.fromSenderDomain -o tsv)
+            REPORTING_EMAIL_FROM="${SENDER_USERNAME}@${ACS_DOMAIN}"
+
+            az keyvault secret set --vault-name "$KEY_VAULT_NAME" --name "acs-connection-string" --value "$ACS_CONNECTION_STRING" --only-show-errors >/dev/null
+            az keyvault secret set --vault-name "$KEY_VAULT_NAME" --name "reporting-email-from" --value "$REPORTING_EMAIL_FROM" --only-show-errors >/dev/null
+
       - name: Deploy reporting infrastructure
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
-            az deployment group create --name "b03-reporting-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/07-reporting.bicep" --parameters location="${{ github.event.inputs.location }}" environmentName="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" reportingStorageAccountName="${{ steps.reporting_names.outputs.reporting_storage_name }}" reportingPlanName="${{ steps.reporting_names.outputs.reporting_plan_name }}" reportingFunctionAppName="${{ steps.reporting_names.outputs.reporting_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" sqlConnectionString="Server=tcp:${{ steps.names.outputs.sql_server_name }}.database.windows.net,1433;Database=schoolgptdb;Uid=sqladminuser;Pwd=${{ steps.names.outputs.sql_admin_password }};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;" schoolTimezone="${{ github.event.inputs.school_timezone }}" dslEmail="${{ github.event.inputs.dsl_email }}" summaryEmails="" leadershipEmails="${{ github.event.inputs.leadership_emails }}" teacherSummaryEmails="${{ github.event.inputs.teacher_summary_emails }}" enableCsvExport=${{ github.event.inputs.enable_csv_export }} csvExportThreshold="${{ github.event.inputs.csv_export_threshold }}" emailProvider="azure_communication_services" acsConnectionString="${{ secrets.ACS_CONNECTION_STRING }}" emailFrom="${{ secrets.REPORTING_EMAIL_FROM }}"
+            ACS_CONNECTION_STRING=$(az keyvault secret show --vault-name "${{ steps.names.outputs.key_vault_name }}" --name "acs-connection-string" --query value -o tsv)
+            REPORTING_EMAIL_FROM=$(az keyvault secret show --vault-name "${{ steps.names.outputs.key_vault_name }}" --name "reporting-email-from" --query value -o tsv)
+            az deployment group create --name "b03-reporting-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/07-reporting.bicep" --parameters location="${{ github.event.inputs.location }}" environmentName="${{ github.event.inputs.environment }}" schoolName="${{ github.event.inputs.school_name }}" reportingStorageAccountName="${{ steps.reporting_names.outputs.reporting_storage_name }}" reportingPlanName="${{ steps.reporting_names.outputs.reporting_plan_name }}" reportingFunctionAppName="${{ steps.reporting_names.outputs.reporting_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" sqlConnectionString="Server=tcp:${{ steps.names.outputs.sql_server_name }}.database.windows.net,1433;Database=schoolgptdb;Uid=sqladminuser;Pwd=${{ steps.names.outputs.sql_admin_password }};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;" schoolTimezone="${{ github.event.inputs.school_timezone }}" dslEmail="${{ github.event.inputs.dsl_email }}" summaryEmails="" leadershipEmails="${{ github.event.inputs.leadership_emails }}" teacherSummaryEmails="${{ github.event.inputs.teacher_summary_emails }}" enableCsvExport=${{ github.event.inputs.enable_csv_export }} csvExportThreshold="${{ github.event.inputs.csv_export_threshold }}" emailProvider="azure_communication_services" acsConnectionString="$ACS_CONNECTION_STRING" emailFrom="$REPORTING_EMAIL_FROM"
 
       - name: Register deployed app URL in Entra redirect URIs
         shell: bash
