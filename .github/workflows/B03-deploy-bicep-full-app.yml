@@ -350,19 +350,20 @@ jobs:
       - name: Register deployed app URL in Entra redirect URIs
         shell: bash
         run: |
-          set +e
+          set -euo pipefail
           FRONTEND_APP_CLIENT_ID=$(grep '^VITE_AZURE_CLIENT_ID=' app/Frontend/.env | cut -d= -f2- | tr -d '\r')
           if [ -z "$FRONTEND_APP_CLIENT_ID" ]; then
-            echo "::warning::No VITE_AZURE_CLIENT_ID found in app/Frontend/.env. Skipping automatic redirect URI registration."
-            exit 0
+            echo "::error::No VITE_AZURE_CLIENT_ID found in app/Frontend/.env. Redirect URI registration cannot continue."
+            exit 1
           fi
 
           SITE_URL="https://${{ env.WEB_APP_NAME }}.azurewebsites.net"
+          SITE_URL_SLASH="${SITE_URL}/"
           APP_OBJECT_ID=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications(appId='${FRONTEND_APP_CLIENT_ID}')?$select=id" --query id -o tsv)
 
           if [ -z "$APP_OBJECT_ID" ]; then
-            echo "::warning::Could not resolve frontend Entra app object ID from VITE_AZURE_CLIENT_ID. Skipping automatic redirect URI registration."
-            exit 0
+            echo "::error::Could not resolve frontend Entra app object ID from VITE_AZURE_CLIENT_ID."
+            exit 1
           fi
 
           CURRENT=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=spa,web" -o json)
@@ -370,7 +371,7 @@ jobs:
           SPA_REDIRECT_URIS=$(
             {
               printf '%s\n' "$SITE_URL"
-              printf '%s/\n' "$SITE_URL"
+              printf '%s\n' "$SITE_URL_SLASH"
               echo "$CURRENT" | jq -r '.spa.redirectUris[]?'
             } | grep -v '^$' | sort -u | jq -R . | jq -s .
           )
@@ -378,7 +379,7 @@ jobs:
           WEB_REDIRECT_URIS=$(
             {
               printf '%s\n' "$SITE_URL"
-              printf '%s/\n' "$SITE_URL"
+              printf '%s\n' "$SITE_URL_SLASH"
               echo "$CURRENT" | jq -r '.web.redirectUris[]?'
             } | grep -v '^$' | sort -u | jq -R . | jq -s .
           )
@@ -394,30 +395,23 @@ jobs:
             --headers "Content-Type=application/json" \
             --body "$SPA_BODY"
 
-          SPA_STATUS=$?
-
           az rest \
             --method PATCH \
             --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
             --headers "Content-Type=application/json" \
             --body "$WEB_BODY"
 
-          WEB_STATUS=$?
-
-          if [ $SPA_STATUS -ne 0 ] || [ $WEB_STATUS -ne 0 ]; then
-            echo "::warning::Automatic Entra redirect URI registration failed. Check that the deployment service principal is an owner of the frontend app registration."
-            exit 0
-          fi
-
           FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=spa,web" -o json)
           echo "$FINAL" | jq '{spa: .spa.redirectUris, web: .web.redirectUris}'
 
           SPA_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.spa.redirectUris // []) | index($url) != null')
+          SPA_HAS_URL_SLASH=$(echo "$FINAL" | jq -r --arg url "$SITE_URL_SLASH" '(.spa.redirectUris // []) | index($url) != null')
           WEB_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.web.redirectUris // []) | index($url) != null')
+          WEB_HAS_URL_SLASH=$(echo "$FINAL" | jq -r --arg url "$SITE_URL_SLASH" '(.web.redirectUris // []) | index($url) != null')
 
-          if [ "$SPA_HAS_URL" != "true" ] || [ "$WEB_HAS_URL" != "true" ]; then
-            echo "::warning::Automatic redirect URI registration completed but the deployed URL was not present in both spa and web redirect URI lists."
-            exit 0
+          if [ "$SPA_HAS_URL" != "true" ] || [ "$SPA_HAS_URL_SLASH" != "true" ] || [ "$WEB_HAS_URL" != "true" ] || [ "$WEB_HAS_URL_SLASH" != "true" ]; then
+            echo "::error::Automatic redirect URI registration did not persist the deployed URL in both spa and web redirect URI lists."
+            exit 1
           fi
 
           echo "Registered redirect URIs for $SITE_URL"
