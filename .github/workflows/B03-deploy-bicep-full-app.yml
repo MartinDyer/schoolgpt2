@@ -359,14 +359,14 @@ jobs:
 
           SITE_URL="https://${{ env.WEB_APP_NAME }}.azurewebsites.net"
           SITE_URL_SLASH="${SITE_URL}/"
-          APP_OBJECT_ID=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications(appId='${FRONTEND_APP_CLIENT_ID}')?$select=id" --query id -o tsv)
+          APP_OBJECT_ID=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications(appId='${FRONTEND_APP_CLIENT_ID}')?\$select=id" --query id -o tsv)
 
           if [ -z "$APP_OBJECT_ID" ]; then
             echo "::error::Could not resolve frontend Entra app object ID from VITE_AZURE_CLIENT_ID."
             exit 1
           fi
 
-          CURRENT=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=spa,web" -o json)
+          CURRENT=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?\$select=spa,web" -o json)
 
           SPA_REDIRECT_URIS=$(
             {
@@ -401,7 +401,7 @@ jobs:
             --headers "Content-Type=application/json" \
             --body "$WEB_BODY"
 
-          FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?$select=spa,web" -o json)
+          FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?\$select=spa,web" -o json)
           echo "$FINAL" | jq '{spa: .spa.redirectUris, web: .web.redirectUris}'
 
           SPA_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.spa.redirectUris // []) | index($url) != null')
