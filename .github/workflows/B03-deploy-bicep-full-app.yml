@@ -371,7 +371,7 @@ jobs:
             exit 1
           fi
 
-          CURRENT=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?\$select=spa,web" -o json)
+          CURRENT=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?\$select=spa" -o json)
 
           SPA_REDIRECT_URIS=$(
             {
@@ -381,18 +381,7 @@ jobs:
             } | grep -v '^$' | sort -u | jq -R . | jq -s .
           )
 
-          WEB_REDIRECT_URIS=$(
-            {
-              printf '%s\n' "$SITE_URL"
-              printf '%s\n' "$SITE_URL_SLASH"
-              echo "$CURRENT" | jq -r '.web.redirectUris[]?'
-            } | grep -v '^$' | sort -u | jq -R . | jq -s .
-          )
-
-          WEB_IMPLICIT=$(echo "$CURRENT" | jq '.web.implicitGrantSettings // {enableAccessTokenIssuance:true,enableIdTokenIssuance:true}')
-
           SPA_BODY=$(jq -cn --argjson spa "$SPA_REDIRECT_URIS" '{spa:{redirectUris:$spa}}')
-          WEB_BODY=$(jq -cn --argjson web "$WEB_REDIRECT_URIS" --argjson implicit "$WEB_IMPLICIT" '{web:{redirectUris:$web,implicitGrantSettings:$implicit}}')
 
           az rest \
             --method PATCH \
@@ -400,26 +389,18 @@ jobs:
             --headers "Content-Type=application/json" \
             --body "$SPA_BODY"
 
-          az rest \
-            --method PATCH \
-            --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID" \
-            --headers "Content-Type=application/json" \
-            --body "$WEB_BODY"
-
-          FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?\$select=spa,web" -o json)
-          echo "$FINAL" | jq '{spa: .spa.redirectUris, web: .web.redirectUris}'
+          FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?\$select=spa" -o json)
+          echo "$FINAL" | jq '{spa: .spa.redirectUris}'
 
           SPA_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.spa.redirectUris // []) | index($url) != null')
           SPA_HAS_URL_SLASH=$(echo "$FINAL" | jq -r --arg url "$SITE_URL_SLASH" '(.spa.redirectUris // []) | index($url) != null')
-          WEB_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.web.redirectUris // []) | index($url) != null')
-          WEB_HAS_URL_SLASH=$(echo "$FINAL" | jq -r --arg url "$SITE_URL_SLASH" '(.web.redirectUris // []) | index($url) != null')
 
-          if [ "$SPA_HAS_URL" != "true" ] || [ "$SPA_HAS_URL_SLASH" != "true" ] || [ "$WEB_HAS_URL" != "true" ] || [ "$WEB_HAS_URL_SLASH" != "true" ]; then
-            echo "::error::Automatic redirect URI registration did not persist the deployed URL in both spa and web redirect URI lists."
+          if [ "$SPA_HAS_URL" != "true" ] || [ "$SPA_HAS_URL_SLASH" != "true" ]; then
+            echo "::error::Automatic SPA redirect URI registration did not persist the deployed URL."
             exit 1
           fi
 
-          echo "Registered redirect URIs for $SITE_URL"
+          echo "Registered SPA redirect URIs for $SITE_URL"
 
       - name: Set up Python for reporting deploy
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
