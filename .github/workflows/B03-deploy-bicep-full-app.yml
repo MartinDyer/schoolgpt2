@@ -489,10 +489,9 @@ jobs:
             for attempt in 1 2 3 4 5 6; do
               echo "Checking reporting functions (attempt $attempt)..."
               FUNCTIONS=$(az functionapp function list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[].name" -o tsv || true)
-              NORMALIZED_FUNCTIONS=$(printf '%s\n' "$FUNCTIONS" | awk -F'/' '{print $NF}')
               ALL_PRESENT=true
               for fn in "${EXPECTED_FUNCTIONS[@]}"; do
-                if ! printf '%s\n' "$NORMALIZED_FUNCTIONS" | grep -qx "$fn"; then
+                if ! printf '%s\n' "$FUNCTIONS" | grep -Eq "(^|/)${fn}$"; then
                   ALL_PRESENT=false
                   break
                 fi
