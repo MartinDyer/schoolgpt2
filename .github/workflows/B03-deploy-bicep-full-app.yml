@@ -501,10 +501,18 @@ jobs:
 
             for attempt in 1 2 3 4 5 6; do
               echo "Checking reporting functions (attempt $attempt)..."
-              FUNCTIONS=$(az functionapp function list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[].name" -o tsv || true)
+              MASTER_KEY=$(az functionapp keys list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query masterKey -o tsv 2>/dev/null || true)
+              if [ -z "$MASTER_KEY" ]; then
+                echo "Master key not available yet. Waiting..."
+                sleep 20
+                continue
+              fi
+
+              FUNCTIONS_JSON=$(curl -fsS -H "x-functions-key: $MASTER_KEY" "https://${APP_NAME}.azurewebsites.net/admin/functions" || true)
+              FUNCTIONS=$(printf '%s' "$FUNCTIONS_JSON" | jq -r '.[].name? // empty')
               ALL_PRESENT=true
               for fn in "${EXPECTED_FUNCTIONS[@]}"; do
-                if ! printf '%s\n' "$FUNCTIONS" | grep -Eq "(^|/)${fn}$"; then
+                if ! printf '%s\n' "$FUNCTIONS" | grep -qx "$fn"; then
                   ALL_PRESENT=false
                   break
                 fi
@@ -514,9 +522,10 @@ jobs:
                 exit 0
               fi
               sleep 20
-              az functionapp restart --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" >/dev/null 2>&1 || true
             done
 
             echo "::error::Reporting Function App did not register all expected functions."
-            az functionapp function list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" -o table || true
+            if [ -n "${MASTER_KEY:-}" ]; then
+              curl -fsS -H "x-functions-key: $MASTER_KEY" "https://${APP_NAME}.azurewebsites.net/admin/functions" || true
+            fi
             exit 1
