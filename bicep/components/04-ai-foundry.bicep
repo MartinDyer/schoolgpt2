@@ -45,56 +45,56 @@ resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01'
     contentFilters: [
       {
         name: 'Hate'
-        severityThreshold: 'High'
+        severityThreshold: 'Low'
         source: 'Prompt'
         enabled: true
         blocking: true
       }
       {
         name: 'Hate'
-        severityThreshold: 'High'
+        severityThreshold: 'Low'
         source: 'Completion'
         enabled: true
         blocking: true
       }
       {
         name: 'Sexual'
-        severityThreshold: 'High'
+        severityThreshold: 'Low'
         source: 'Prompt'
         enabled: true
         blocking: true
       }
       {
         name: 'Sexual'
-        severityThreshold: 'High'
+        severityThreshold: 'Low'
         source: 'Completion'
         enabled: true
         blocking: true
       }
       {
         name: 'Violence'
-        severityThreshold: 'High'
+        severityThreshold: 'Low'
         source: 'Prompt'
         enabled: true
         blocking: true
       }
       {
         name: 'Violence'
-        severityThreshold: 'High'
+        severityThreshold: 'Low'
         source: 'Completion'
         enabled: true
         blocking: true
       }
       {
         name: 'SelfHarm'
-        severityThreshold: 'High'
+        severityThreshold: 'Low'
         source: 'Prompt'
         enabled: true
         blocking: true
       }
       {
         name: 'SelfHarm'
-        severityThreshold: 'High'
+        severityThreshold: 'Low'
         source: 'Completion'
         enabled: true
         blocking: true
