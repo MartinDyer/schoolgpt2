@@ -433,18 +433,24 @@ jobs:
             --headers "Content-Type=application/json" \
             --body "$SPA_BODY"
 
-          FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?\$select=spa" -o json)
-          echo "$FINAL" | jq '{spa: .spa.redirectUris}'
+          for attempt in 1 2 3 4 5 6; do
+            FINAL=$(az rest --method GET --url "https://graph.microsoft.com/v1.0/applications/$APP_OBJECT_ID?\$select=spa" -o json)
+            echo "$FINAL" | jq '{spa: .spa.redirectUris}'
 
-          SPA_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.spa.redirectUris // []) | index($url) != null')
-          SPA_HAS_URL_SLASH=$(echo "$FINAL" | jq -r --arg url "$SITE_URL_SLASH" '(.spa.redirectUris // []) | index($url) != null')
+            SPA_HAS_URL=$(echo "$FINAL" | jq -r --arg url "$SITE_URL" '(.spa.redirectUris // []) | index($url) != null')
+            SPA_HAS_URL_SLASH=$(echo "$FINAL" | jq -r --arg url "$SITE_URL_SLASH" '(.spa.redirectUris // []) | index($url) != null')
 
-          if [ "$SPA_HAS_URL" != "true" ] || [ "$SPA_HAS_URL_SLASH" != "true" ]; then
-            echo "::error::Automatic SPA redirect URI registration did not persist the deployed URL."
-            exit 1
-          fi
+            if [ "$SPA_HAS_URL" = "true" ] && [ "$SPA_HAS_URL_SLASH" = "true" ]; then
+              echo "Registered SPA redirect URIs for $SITE_URL"
+              exit 0
+            fi
 
-          echo "Registered SPA redirect URIs for $SITE_URL"
+            echo "SPA redirect URIs not visible yet (attempt $attempt). Waiting for Graph consistency..."
+            sleep 10
+          done
+
+          echo "::error::Automatic SPA redirect URI registration did not persist the deployed URL after retries."
+          exit 1
 
       - name: Set up Python for reporting deploy
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
