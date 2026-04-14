@@ -244,6 +244,50 @@ jobs:
             if [ "${{ github.event.inputs.deploy_ai_foundry }}" = "true" ]; then AI_FOUNDRY_NAME="${{ steps.names.outputs.ai_foundry_name }}"; fi
             az deployment group create --name "b03-appconfig-${GITHUB_RUN_NUMBER}" --resource-group "${{ github.event.inputs.resource_group_name }}" --template-file "./bicep/components/06-app-config.bicep" --parameters webAppName="${{ steps.names.outputs.web_app_name }}" appInsightsName="${{ steps.names.outputs.app_insights_name }}" keyVaultName="${{ steps.names.outputs.key_vault_name }}" sqlServerName="${{ steps.names.outputs.sql_server_name }}" sqlDatabaseName="schoolgptdb" sqlAdminLogin="sqladminuser" sqlAdminPassword="${{ steps.names.outputs.sql_admin_password }}" aiDeploymentName="${{ github.event.inputs.ai_deployment_name }}" azureOpenAiApiVersion="2025-01-01-preview" deployAiFoundry=${{ github.event.inputs.deploy_ai_foundry }} aiFoundryName="$AI_FOUNDRY_NAME" existingAiFoundryEndpoint="${{ github.event.inputs.existing_ai_foundry_endpoint }}"
 
+      - name: Harden Azure OpenAI app settings
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            set -euo pipefail
+            RESOURCE_GROUP="${{ github.event.inputs.resource_group_name }}"
+            WEB_APP_NAME="${{ steps.names.outputs.web_app_name }}"
+            AI_DEPLOYMENT_NAME="${{ github.event.inputs.ai_deployment_name }}"
+            AI_API_VERSION="2025-01-01-preview"
+
+            if [ "${{ github.event.inputs.deploy_ai_foundry }}" = "true" ]; then
+              AI_RESOURCE_NAME="${{ steps.names.outputs.ai_foundry_name }}"
+              AI_ENDPOINT=$(az cognitiveservices account show --resource-group "$RESOURCE_GROUP" --name "$AI_RESOURCE_NAME" --query properties.endpoint -o tsv)
+              if [ -z "$AI_ENDPOINT" ]; then
+                echo "::error::Azure OpenAI endpoint could not be resolved from deployed AI resource."
+                exit 1
+              fi
+
+              az cognitiveservices account deployment show --resource-group "$RESOURCE_GROUP" --name "$AI_RESOURCE_NAME" --deployment-name "$AI_DEPLOYMENT_NAME" --only-show-errors >/dev/null
+
+              AI_KEY=$(az cognitiveservices account keys list --resource-group "$RESOURCE_GROUP" --name "$AI_RESOURCE_NAME" --query key1 -o tsv)
+              if [ -z "$AI_KEY" ]; then
+                echo "::error::Azure OpenAI API key could not be resolved from deployed AI resource."
+                exit 1
+              fi
+
+              az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEB_APP_NAME" --settings AZURE_OPENAI_ENDPOINT="$AI_ENDPOINT" AZURE_OPENAI_DEPLOYMENT="$AI_DEPLOYMENT_NAME" AZURE_OPENAI_API_VERSION="$AI_API_VERSION" AZURE_OPENAI_API_KEY="$AI_KEY" -o none
+            else
+              EXISTING_AI_ENDPOINT="${{ github.event.inputs.existing_ai_foundry_endpoint }}"
+              EXISTING_AI_API_KEY="${{ secrets.EXISTING_AZURE_OPENAI_API_KEY }}"
+              if [ -z "$EXISTING_AI_ENDPOINT" ]; then
+                echo "::error::existing_ai_foundry_endpoint is required when deploy_ai_foundry is false."
+                exit 1
+              fi
+              if [ -z "$EXISTING_AI_API_KEY" ]; then
+                echo "::error::deploy_ai_foundry=false currently requires EXISTING_AZURE_OPENAI_API_KEY secret so the deployed app has a valid auth path."
+                exit 1
+              fi
+              az webapp config appsettings set --resource-group "$RESOURCE_GROUP" --name "$WEB_APP_NAME" --settings AZURE_OPENAI_ENDPOINT="$EXISTING_AI_ENDPOINT" AZURE_OPENAI_DEPLOYMENT="$AI_DEPLOYMENT_NAME" AZURE_OPENAI_API_VERSION="$AI_API_VERSION" AZURE_OPENAI_API_KEY="$EXISTING_AI_API_KEY" -o none
+            fi
+
+            az webapp config appsettings list --resource-group "$RESOURCE_GROUP" --name "$WEB_APP_NAME" --query "[?name=='AZURE_OPENAI_ENDPOINT' || name=='AZURE_OPENAI_DEPLOYMENT' || name=='AZURE_OPENAI_API_VERSION'].{name:name,value:value}" -o table
+
       - name: Provision ACS and store reporting email secrets in Key Vault
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
         uses: azure/cli@v2
@@ -423,3 +467,44 @@ jobs:
           package: ./reporting
           scm-do-build-during-deployment: true
           enable-oryx-build: true
+
+      - name: Verify reporting function registration
+        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            set -euo pipefail
+            APP_NAME="${{ env.REPORTING_FUNCTION_APP_NAME }}"
+            RESOURCE_GROUP="${{ env.RESOURCE_GROUP_NAME }}"
+            EXPECTED_FUNCTIONS=(
+              dsl_daily_report
+              usage_daily_report
+              dsl_keyword_watch_report
+              leadership_summary_report
+              teacher_summary_report
+              reporting_retention
+            )
+
+            for attempt in 1 2 3 4 5 6; do
+              echo "Checking reporting functions (attempt $attempt)..."
+              FUNCTIONS=$(az functionapp function list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[].name" -o tsv || true)
+              NORMALIZED_FUNCTIONS=$(printf '%s\n' "$FUNCTIONS" | awk -F'/' '{print $NF}')
+              ALL_PRESENT=true
+              for fn in "${EXPECTED_FUNCTIONS[@]}"; do
+                if ! printf '%s\n' "$NORMALIZED_FUNCTIONS" | grep -qx "$fn"; then
+                  ALL_PRESENT=false
+                  break
+                fi
+              done
+              if [ "$ALL_PRESENT" = true ]; then
+                printf '%s\n' "$FUNCTIONS"
+                exit 0
+              fi
+              sleep 20
+              az functionapp restart --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" >/dev/null 2>&1 || true
+            done
+
+            echo "::error::Reporting Function App did not register all expected functions."
+            az functionapp function list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" -o table || true
+            exit 1
