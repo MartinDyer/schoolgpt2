@@ -465,21 +465,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build deployable reporting package
-        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
-        working-directory: ./reporting
-        run: |
-          rm -rf .python_packages
-          python -m pip install --target=".python_packages/lib/site-packages" -r requirements.txt
-
       - name: Deploy reporting package to Azure Function App
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
         uses: Azure/functions-action@v1
         with:
           app-name: ${{ env.REPORTING_FUNCTION_APP_NAME }}
           package: ./reporting
-          scm-do-build-during-deployment: false
-          enable-oryx-build: false
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
 
       - name: Verify reporting function registration
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true

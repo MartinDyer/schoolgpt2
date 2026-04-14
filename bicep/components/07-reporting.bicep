@@ -104,11 +104,11 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'false'
+          value: 'true'
         }
         {
           name: 'ENABLE_ORYX_BUILD'
-          value: 'false'
+          value: 'true'
         }
         {
           name: 'SQL_CONNECTION_STRING'
