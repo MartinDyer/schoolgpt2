@@ -540,7 +540,7 @@ jobs:
                 exit 0
               fi
               echo "Host is running but functions are not fully indexed yet. Waiting..."
-              echo "Current functions response: $FUNCTIONS_JSON"
+              echo "Current functions response: $LAST_FUNCTIONS_JSON"
               sleep 15
             done
 
