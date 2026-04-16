@@ -29,6 +29,27 @@ def detect_reporting_schema(connection: Any) -> str:
     raise RuntimeError("No supported reporting schema found")
 
 
+def detect_incident_reporting_schema(connection: Any) -> str:
+    cursor = connection.cursor()
+    rows = cursor.execute(PREFERRED_SCHEMA_CHECK).fetchall()
+    available = {row[0] for row in rows}
+    if "FlaggedMessages" in available:
+        flagged_rows = cursor.execute("SELECT TOP 1 id FROM dbo.FlaggedMessages ORDER BY createdAt DESC").fetchone()
+        if flagged_rows:
+            return "runtime"
+    if {"ContentFilterViolations", "Users"}.issubset(available):
+        violation_rows = cursor.execute(
+            "SELECT TOP 1 ViolationId FROM dbo.ContentFilterViolations ORDER BY Timestamp DESC"
+        ).fetchone()
+        if violation_rows:
+            return "infra"
+    if "FlaggedMessages" in available:
+        return "runtime"
+    if {"ContentFilterViolations", "Users"}.issubset(available):
+        return "infra"
+    raise RuntimeError("No supported reporting incident schema found")
+
+
 def fetch_role_counts(connection: Any) -> list[tuple[str, int]]:
     cursor = connection.cursor()
     rows = cursor.execute(
@@ -38,7 +59,7 @@ def fetch_role_counts(connection: Any) -> list[tuple[str, int]]:
 
 
 def fetch_dsl_incidents(connection: Any, since_utc: datetime, min_severity: str) -> list[IncidentRecord]:
-    schema = detect_reporting_schema(connection)
+    schema = detect_incident_reporting_schema(connection)
     if schema == "infra":
         return _fetch_infra_incidents(connection, since_utc, min_severity)
     return _fetch_runtime_incidents(connection, since_utc, min_severity)

@@ -465,14 +465,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Build deployable reporting package
+        if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
+        working-directory: ./reporting
+        run: |
+          rm -rf .python_packages
+          python -m pip install --target=".python_packages/lib/site-packages" -r requirements.txt
+
       - name: Deploy reporting package to Azure Function App
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
         uses: Azure/functions-action@v1
         with:
           app-name: ${{ env.REPORTING_FUNCTION_APP_NAME }}
           package: ./reporting
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true
+          scm-do-build-during-deployment: false
+          enable-oryx-build: false
 
       - name: Verify reporting function registration
         if: github.event.inputs.enable_reporting == 'true' || github.event.inputs.enable_reporting == true
@@ -492,17 +499,35 @@ jobs:
               reporting_retention
             )
 
-            for attempt in 1 2 3 4 5 6; do
+            LAST_HOST_STATUS=""
+            LAST_FUNCTIONS_JSON=""
+
+            for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
               echo "Checking reporting functions (attempt $attempt)..."
               MASTER_KEY=$(az functionapp keys list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query masterKey -o tsv 2>/dev/null || true)
               if [ -z "$MASTER_KEY" ]; then
                 echo "Master key not available yet. Waiting..."
-                sleep 20
+                sleep 15
                 continue
               fi
 
-              FUNCTIONS_JSON=$(curl -fsS -H "x-functions-key: $MASTER_KEY" "https://${APP_NAME}.azurewebsites.net/admin/functions" || true)
-              FUNCTIONS=$(printf '%s' "$FUNCTIONS_JSON" | jq -r '.[].name? // empty')
+              LAST_HOST_STATUS=$(curl -fsS -H "x-functions-key: $MASTER_KEY" "https://${APP_NAME}.azurewebsites.net/admin/host/status" || true)
+              if [ -z "$LAST_HOST_STATUS" ]; then
+                echo "Host status endpoint not ready yet. Waiting..."
+                sleep 15
+                continue
+              fi
+
+              HOST_STATE=$(printf '%s' "$LAST_HOST_STATUS" | jq -r '.state? // empty' 2>/dev/null || true)
+              HOST_ERRORS=$(printf '%s' "$LAST_HOST_STATUS" | jq -r '(.errors // []) | length' 2>/dev/null || true)
+              if [ "$HOST_STATE" != "Running" ] || [ "${HOST_ERRORS:-0}" != "0" ]; then
+                echo "Host not ready yet (state=${HOST_STATE:-unknown}, errors=${HOST_ERRORS:-unknown}). Waiting..."
+                sleep 15
+                continue
+              fi
+
+              LAST_FUNCTIONS_JSON=$(curl -fsS -H "x-functions-key: $MASTER_KEY" "https://${APP_NAME}.azurewebsites.net/admin/functions" || true)
+              FUNCTIONS=$(printf '%s' "$LAST_FUNCTIONS_JSON" | jq -r '.[].name? // empty')
               ALL_PRESENT=true
               for fn in "${EXPECTED_FUNCTIONS[@]}"; do
                 if ! printf '%s\n' "$FUNCTIONS" | grep -qx "$fn"; then
@@ -514,11 +539,20 @@ jobs:
                 printf '%s\n' "$FUNCTIONS"
                 exit 0
               fi
-              sleep 20
+              echo "Host is running but functions are not fully indexed yet. Waiting..."
+              echo "Current functions response: $LAST_FUNCTIONS_JSON"
+              sleep 15
             done
 
             echo "::error::Reporting Function App did not register all expected functions."
-            if [ -n "${MASTER_KEY:-}" ]; then
+            if [ -n "${LAST_HOST_STATUS:-}" ]; then
+              echo "Last host status:"
+              printf '%s\n' "$LAST_HOST_STATUS"
+            fi
+            if [ -n "${LAST_FUNCTIONS_JSON:-}" ]; then
+              echo "Last functions payload:"
+              printf '%s\n' "$LAST_FUNCTIONS_JSON"
+            elif [ -n "${MASTER_KEY:-}" ]; then
               curl -fsS -H "x-functions-key: $MASTER_KEY" "https://${APP_NAME}.azurewebsites.net/admin/functions" || true
             fi
             exit 1

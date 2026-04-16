@@ -108,6 +108,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Build deployable reporting package
+        working-directory: ./reporting
+        run: |
+          rm -rf .python_packages
+          python -m pip install --target=".python_packages/lib/site-packages" -r requirements.txt
+
       - name: Run reporting unit tests
         working-directory: ./reporting
         env:
@@ -196,8 +202,8 @@ jobs:
         with:
           app-name: ${{ steps.names.outputs.reporting_app }}
           package: ./reporting
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true
+          scm-do-build-during-deployment: false
+          enable-oryx-build: false
 
       - name: Publish deployment outputs
         run: |
