@@ -13,6 +13,11 @@ param reportingPlanSku string = 'B1'
 param sqlConnectionString string
 
 param schoolTimezone string = 'Europe/London'
+param reportingApiBase string = ''
+
+@secure()
+param reportingApiKey string = ''
+
 param dslEmail string
 param summaryEmails string = ''
 param leadershipEmails string = ''
@@ -121,6 +126,14 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'SCHOOL_TIMEZONE'
           value: schoolTimezone
+        }
+        {
+          name: 'REPORTING_API_BASE'
+          value: reportingApiBase
+        }
+        {
+          name: 'REPORTING_API_KEY'
+          value: reportingApiKey
         }
         {
           name: 'DSL_EMAIL'

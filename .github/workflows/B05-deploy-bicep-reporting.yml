@@ -80,6 +80,11 @@ on:
         required: true
         default: 'B1'
         type: string
+      reporting_api_base:
+        description: 'Backend reporting API base URL'
+        required: true
+        default: 'https://example.azurewebsites.net/api/reporting'
+        type: string
 
 permissions:
   id-token: write
@@ -120,6 +125,8 @@ jobs:
           SQL_CONNECTION_STRING: 'Driver=test'
           SCHOOL_NAME: ${{ github.event.inputs.school_name }}
           SCHOOL_TIMEZONE: ${{ github.event.inputs.school_timezone }}
+          REPORTING_API_BASE: ${{ github.event.inputs.reporting_api_base }}
+          REPORTING_API_KEY: test-reporting-key
           DSL_EMAIL: ${{ github.event.inputs.dsl_email }}
           SUMMARY_EMAILS: ${{ github.event.inputs.summary_emails }}
           LEADERSHIP_EMAILS: ${{ github.event.inputs.leadership_emails }}
@@ -183,6 +190,8 @@ jobs:
                 reportingPlanSku="${{ github.event.inputs.reporting_plan_sku }}" \
                 sqlConnectionString="${{ secrets.SQL_CONNECTION_STRING }}" \
                 schoolTimezone="${{ github.event.inputs.school_timezone }}" \
+                reportingApiBase="${{ github.event.inputs.reporting_api_base }}" \
+                reportingApiKey="${{ secrets.REPORTING_API_KEY }}" \
                 dslEmail="${{ github.event.inputs.dsl_email }}" \
                 summaryEmails="${{ github.event.inputs.summary_emails }}" \
                 leadershipEmails="${{ github.event.inputs.leadership_emails }}" \

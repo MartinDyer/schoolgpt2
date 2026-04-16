@@ -32,8 +32,8 @@ This document describes the separate safeguarding reporting layer introduced for
 
 - Recommended provider: **Azure Communication Services**
 - The reporting layer should stay a normal separate Azure Function aligned with the repo's existing deployment shape.
-- The reporting layer now uses the Microsoft `mssql-python` driver to avoid OS-level ODBC setup in Azure Functions.
-- The reporting layer uses a pure Python SQL Server client (`python-tds`) to avoid OS-level ODBC setup in Azure Functions.
+- The reporting layer no longer relies on direct SQL access from Python.
+- The reporting Function App calls secured backend reporting endpoints, and the backend reuses the existing Node + SQL access path.
 - Reports render timestamps using `SCHOOL_TIMEZONE`.
 - Detailed incident emails are DSL-only; aggregate summaries must not include raw message content.
 - If `ENABLE_CSV_EXPORT=true` and flagged safeguarding incidents exceed `CSV_EXPORT_THRESHOLD`, the DSL report attaches a CSV file that staff can open in Excel.
@@ -48,6 +48,20 @@ This is the table written by the live backend moderation/blocking flow when prom
 
 Higher-level aggregate reporting can still use summary/query views where appropriate, but **blocked-message safeguarding notifications are sourced from `FlaggedMessages`**.
 
+## Reporting backend integration
+
+The reporting Function App is intentionally kept as a **separate scheduling and orchestration layer**, but it now gets reporting data by calling protected backend endpoints instead of connecting to SQL directly.
+
+Backend endpoint base:
+
+- `REPORTING_API_BASE`
+
+Shared secret header:
+
+- `x-reporting-key: <REPORTING_API_KEY>`
+
+This approach is more reliable for Azure Functions because the existing Node backend already has a working SQL path, while it avoids Python SQL/TLS runtime compatibility issues in the reporting Function App.
+
 ## B03 Full App Deployment Setup
 
 The preferred school onboarding path is now the existing **B03** pipeline.
@@ -57,6 +71,8 @@ When `ENABLE_REPORTING=true`, B03 asks for/accepts:
 - `DSL_EMAIL` (required)
 - `TEACHER_SUMMARY_EMAILS` (optional)
 - `LEADERSHIP_EMAILS` (optional)
+- `SUMMARY_EMAILS` (optional)
+- `REPORTING_API_KEY` (generated and shared between backend + reporting layer)
 - `ENABLE_CSV_EXPORT`
 - `CSV_EXPORT_THRESHOLD`
 - `SCHOOL_TIMEZONE`
