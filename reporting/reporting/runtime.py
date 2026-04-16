@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class Settings(BaseModel):
-    sql_connection_string: str = Field(alias="SQL_CONNECTION_STRING")
+    sql_connection_string: str = Field(default="", alias="SQL_CONNECTION_STRING")
     school_name: str = Field(alias="SCHOOL_NAME")
     school_timezone: str = Field(alias="SCHOOL_TIMEZONE")
     dsl_email: str = Field(alias="DSL_EMAIL")
@@ -19,6 +19,8 @@ class Settings(BaseModel):
     teacher_summary_emails: str = Field(default="", alias="TEACHER_SUMMARY_EMAILS")
     enable_csv_export: bool = Field(default=True, alias="ENABLE_CSV_EXPORT")
     csv_export_threshold: int = Field(default=10, alias="CSV_EXPORT_THRESHOLD")
+    reporting_api_base: str = Field(default="", alias="REPORTING_API_BASE")
+    reporting_api_key: str = Field(default="", alias="REPORTING_API_KEY")
     email_provider: str = Field(default="azure_communication_services", alias="EMAIL_PROVIDER")
     email_from: str = Field(alias="EMAIL_FROM")
     email_provider_api_key: str = Field(default="", alias="EMAIL_PROVIDER_API_KEY")
@@ -62,6 +64,10 @@ class Settings(BaseModel):
     def validate_provider_requirements(self):
         if self.email_provider == "azure_communication_services" and not self.acs_connection_string.strip():
             raise ValueError("ACS_CONNECTION_STRING is required when EMAIL_PROVIDER=azure_communication_services")
+        if not self.reporting_api_base.strip():
+            raise ValueError("REPORTING_API_BASE is required")
+        if not self.reporting_api_key.strip():
+            raise ValueError("REPORTING_API_KEY is required")
         return self
 
     @property
@@ -81,34 +87,8 @@ class Settings(BaseModel):
         return ZoneInfo(self.school_timezone)
 
     @property
-    def sql_connection_attributes(self) -> OrderedDict[str, str]:
-        attributes: OrderedDict[str, str] = OrderedDict()
-        for segment in self.sql_connection_string.split(';'):
-            part = segment.strip()
-            if not part or '=' not in part:
-                continue
-            key, value = part.split('=', 1)
-            normalized_key = key.strip()
-            normalized_value = value.strip()
-            lowered_key = normalized_key.lower()
-            lowered_value = normalized_value.lower()
-
-            if lowered_key == 'initial catalog':
-                normalized_key = 'Database'
-            elif lowered_key == 'user id':
-                normalized_key = 'Uid'
-            elif lowered_key == 'password':
-                normalized_key = 'Pwd'
-            elif lowered_key == 'persist security info':
-                continue
-            elif lowered_key == 'multipleactiveresultsets':
-                continue
-
-            if lowered_key in {'encrypt', 'trustservercertificate'}:
-                normalized_value = 'yes' if lowered_value in {'true', 'yes', 'mandatory', 'strict'} else 'no'
-
-            attributes[normalized_key] = normalized_value
-        return attributes
+    def normalized_reporting_api_base(self) -> str:
+        return self.reporting_api_base.rstrip('/')
 
 
 @lru_cache(maxsize=1)
