@@ -1,13 +1,7 @@
-name: 🚀 06- Deploy Full App (React + Node)
+name: 🚀 06- Deploy Full App (React + Node) [LEGACY]
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'app/**'
-      - 'infra/**'
 
 env:
   NODE_VERSION: "18.x"
