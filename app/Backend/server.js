@@ -24,6 +24,7 @@ const path = require("path");
 // Routers
 const chatRoutes = require("./src/routes/chatRoutes");
 const shareRoutes = require("./src/routes/shareRoutes");
+const reportingRoutes = require("./src/routes/reportingRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -41,6 +42,7 @@ app.use((req, res, next) => {
 // Mount routers under /api  (route paths inside routers already start with /chat(s) and /share)
 app.use("/api", chatRoutes);
 app.use("/api", shareRoutes);
+app.use("/api", reportingRoutes);
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
