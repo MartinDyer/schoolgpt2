@@ -40,25 +40,25 @@ def test_detect_reporting_schema_prefers_infra():
 def test_detect_incident_reporting_schema_prefers_runtime_when_both_sources_exist():
     connection = FakeConnection([
         [('Users',), ('ContentFilterViolations',), ('FlaggedMessages',), ('vw_ContentFilterReview',)],
-        [('flagged-row',)],
     ])
     assert queries.detect_incident_reporting_schema(connection) == 'runtime'
 
 
-def test_detect_incident_reporting_schema_falls_back_to_infra_when_runtime_empty():
+def test_detect_incident_reporting_schema_requires_flagged_messages():
     connection = FakeConnection([
-        [('Users',), ('ContentFilterViolations',), ('FlaggedMessages',), ('vw_ContentFilterReview',)],
-        [],
-        [('infra-row',)],
+        [('Users',), ('ContentFilterViolations',), ('vw_ContentFilterReview',)],
     ])
-    assert queries.detect_incident_reporting_schema(connection) == 'infra'
+    try:
+        queries.detect_incident_reporting_schema(connection)
+        assert False, 'Expected runtime incident source requirement error'
+    except RuntimeError as exc:
+        assert 'FlaggedMessages' in str(exc)
 
 
 def test_fetch_runtime_incidents_parses_detail_json():
     created_at = datetime(2026, 4, 11, tzinfo=timezone.utc)
     result_sets = [
         [('FlaggedMessages',)],
-        [('flagged-row',)],
         [(
             '1',
             'student-1',
@@ -82,7 +82,6 @@ def test_fetch_dsl_incidents_prefers_runtime_when_both_sources_exist():
     created_at = datetime(2026, 4, 11, tzinfo=timezone.utc)
     result_sets = [
         [('Users',), ('ContentFilterViolations',), ('FlaggedMessages',)],
-        [('flagged-row',)],
         [(
             '1',
             'student-1',
@@ -128,11 +127,10 @@ def test_fetch_usage_summaries_still_prefers_infra_when_both_sources_exist():
 def test_fetch_teacher_summary_builds_referral_signal():
     created_at = datetime(2026, 4, 11, tzinfo=timezone.utc)
     result_sets = [
-        [('Users',), ('ContentFilterViolations',)],
-        [('infra-row',)],
+        [('FlaggedMessages',)],
         [
-            ('1', 'student-1', 'Student A', 'Student', '8', 'session-1', 'SelfHarm', 'high', 'Blocked', 'msg', created_at, None),
-            ('2', 'student-2', 'Student B', 'Student', '9', 'session-2', 'Violence', 'medium', 'Blocked', 'msg', created_at, None),
+            ('1', 'student-1', 'session-1', 'ANSWER', 'msg', None, 'content_filter', '{"self_harm": {"filtered": true, "severity": "high"}}', created_at),
+            ('2', 'student-2', 'session-2', 'ANSWER', 'msg', None, 'content_filter', '{"violence": {"filtered": true, "severity": "medium"}}', created_at),
         ],
     ]
     connection = FakeConnection(result_sets)
@@ -144,11 +142,10 @@ def test_fetch_teacher_summary_builds_referral_signal():
 def test_fetch_leadership_summary_aggregates_without_identity_output():
     created_at = datetime(2026, 4, 11, tzinfo=timezone.utc)
     result_sets = [
-        [('Users',), ('ContentFilterViolations',)],
-        [('infra-row',)],
+        [('FlaggedMessages',)],
         [
-            ('1', 'student-1', 'Student A', 'Student', '8', 'session-1', 'SelfHarm', 'high', 'Blocked', 'msg', created_at, None),
-            ('2', 'student-2', 'Student B', 'Student', '9', 'session-2', 'Violence', 'medium', 'Blocked', 'msg', created_at, None),
+            ('1', 'student-1', 'session-1', 'ANSWER', 'msg', None, 'content_filter', '{"self_harm": {"filtered": true, "severity": "high"}}', created_at),
+            ('2', 'student-2', 'session-2', 'ANSWER', 'msg', None, 'content_filter', '{"violence": {"filtered": true, "severity": "medium"}}', created_at),
         ],
     ]
     connection = FakeConnection(result_sets)

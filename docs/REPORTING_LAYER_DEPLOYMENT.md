@@ -38,6 +38,16 @@ This document describes the separate safeguarding reporting layer introduced for
 - Detailed incident emails are DSL-only; aggregate summaries must not include raw message content.
 - If `ENABLE_CSV_EXPORT=true` and flagged safeguarding incidents exceed `CSV_EXPORT_THRESHOLD`, the DSL report attaches a CSV file that staff can open in Excel.
 
+## Canonical safeguarding incident source
+
+For the current application architecture, incident-triggered safeguarding reporting is based on a single authoritative source:
+
+- `dbo.FlaggedMessages`
+
+This is the table written by the live backend moderation/blocking flow when prompts are rejected or policy-violating. Using one explicit incident source avoids ambiguity between multiple schemas and ensures DSL/teacher/keyword safeguarding notifications align with the actual blocked-message write path.
+
+Higher-level aggregate reporting can still use summary/query views where appropriate, but **blocked-message safeguarding notifications are sourced from `FlaggedMessages`**.
+
 ## B03 Full App Deployment Setup
 
 The preferred school onboarding path is now the existing **B03** pipeline.
