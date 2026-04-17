@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "6708234130600862157"
+      "templateHash": "10277596504944371740"
     }
   },
   "parameters": {
@@ -37,9 +37,6 @@
       "type": "string",
       "defaultValue": "B1"
     },
-    "sqlConnectionString": {
-      "type": "securestring"
-    },
     "schoolTimezone": {
       "type": "string",
       "defaultValue": "Europe/London"
@@ -51,45 +48,6 @@
     "reportingApiKey": {
       "type": "securestring",
       "defaultValue": ""
-    },
-    "dslEmail": {
-      "type": "string"
-    },
-    "summaryEmails": {
-      "type": "string",
-      "defaultValue": ""
-    },
-    "leadershipEmails": {
-      "type": "string",
-      "defaultValue": ""
-    },
-    "teacherSummaryEmails": {
-      "type": "string",
-      "defaultValue": ""
-    },
-    "enableCsvExport": {
-      "type": "bool",
-      "defaultValue": true
-    },
-    "csvExportThreshold": {
-      "type": "int",
-      "defaultValue": 10
-    },
-    "emailProvider": {
-      "type": "string",
-      "defaultValue": "azure_communication_services"
-    },
-    "emailProviderApiKey": {
-      "type": "securestring",
-      "defaultValue": ""
-    },
-    "acsConnectionString": {
-      "type": "securestring",
-      "defaultValue": ""
-    },
-    "emailFrom": {
-      "type": "string",
-      "defaultValue": "noreply@schoolgpt.local"
     },
     "dslReportSchedule": {
       "type": "string",
@@ -114,22 +72,6 @@
     "retentionReportSchedule": {
       "type": "string",
       "defaultValue": "0 0 3 * * 0"
-    },
-    "reportingInitialWatermark": {
-      "type": "string",
-      "defaultValue": "2026-01-01T00:00:00Z"
-    },
-    "keywordWatchTerms": {
-      "type": "string",
-      "defaultValue": "self-harm,violence,abuse"
-    },
-    "dslMinSeverity": {
-      "type": "string",
-      "defaultValue": "medium"
-    },
-    "reportingAuditRetentionDays": {
-      "type": "int",
-      "defaultValue": 90
     }
   },
   "resources": [
@@ -205,10 +147,6 @@
               "value": "false"
             },
             {
-              "name": "SQL_CONNECTION_STRING",
-              "value": "[parameters('sqlConnectionString')]"
-            },
-            {
               "name": "SCHOOL_NAME",
               "value": "[parameters('schoolName')]"
             },
@@ -223,46 +161,6 @@
             {
               "name": "REPORTING_API_KEY",
               "value": "[parameters('reportingApiKey')]"
-            },
-            {
-              "name": "DSL_EMAIL",
-              "value": "[parameters('dslEmail')]"
-            },
-            {
-              "name": "SUMMARY_EMAILS",
-              "value": "[parameters('summaryEmails')]"
-            },
-            {
-              "name": "LEADERSHIP_EMAILS",
-              "value": "[parameters('leadershipEmails')]"
-            },
-            {
-              "name": "TEACHER_SUMMARY_EMAILS",
-              "value": "[parameters('teacherSummaryEmails')]"
-            },
-            {
-              "name": "ENABLE_CSV_EXPORT",
-              "value": "[string(parameters('enableCsvExport'))]"
-            },
-            {
-              "name": "CSV_EXPORT_THRESHOLD",
-              "value": "[string(parameters('csvExportThreshold'))]"
-            },
-            {
-              "name": "EMAIL_PROVIDER",
-              "value": "[parameters('emailProvider')]"
-            },
-            {
-              "name": "EMAIL_PROVIDER_API_KEY",
-              "value": "[parameters('emailProviderApiKey')]"
-            },
-            {
-              "name": "ACS_CONNECTION_STRING",
-              "value": "[parameters('acsConnectionString')]"
-            },
-            {
-              "name": "EMAIL_FROM",
-              "value": "[parameters('emailFrom')]"
             },
             {
               "name": "DSL_REPORT_SCHEDULE",
@@ -287,22 +185,6 @@
             {
               "name": "RETENTION_REPORT_SCHEDULE",
               "value": "[parameters('retentionReportSchedule')]"
-            },
-            {
-              "name": "REPORTING_INITIAL_WATERMARK",
-              "value": "[parameters('reportingInitialWatermark')]"
-            },
-            {
-              "name": "KEYWORD_WATCH_TERMS",
-              "value": "[parameters('keywordWatchTerms')]"
-            },
-            {
-              "name": "DSL_MIN_SEVERITY",
-              "value": "[parameters('dslMinSeverity')]"
-            },
-            {
-              "name": "REPORTING_AUDIT_RETENTION_DAYS",
-              "value": "[string(parameters('reportingAuditRetentionDays'))]"
             },
             {
               "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",

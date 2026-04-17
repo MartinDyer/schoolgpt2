@@ -3,30 +3,15 @@
     "Values": {
       "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "python",
-    "SQL_CONNECTION_STRING": "Server=tcp:example.database.windows.net,1433;Database=schoolgpt;Uid=readonly_user;Pwd=replace-me;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;",
     "SCHOOL_NAME": "Example School",
     "SCHOOL_TIMEZONE": "Europe/London",
     "REPORTING_API_BASE": "http://localhost:8080/api/reporting",
     "REPORTING_API_KEY": "replace-me",
-    "DSL_EMAIL": "dsl@example-school.edu",
-    "SUMMARY_EMAILS": "",
-    "LEADERSHIP_EMAILS": "",
-    "TEACHER_SUMMARY_EMAILS": "",
-    "ENABLE_CSV_EXPORT": "true",
-    "CSV_EXPORT_THRESHOLD": "10",
-    "EMAIL_PROVIDER": "azure_communication_services",
-    "EMAIL_FROM": "noreply@example-school.edu",
-    "EMAIL_PROVIDER_API_KEY": "replace-me",
-    "ACS_CONNECTION_STRING": "endpoint=https://example.unitedkingdom.communication.azure.com/;accesskey=replace-me",
     "DSL_REPORT_SCHEDULE": "0 0 7 * * *",
     "USAGE_REPORT_SCHEDULE": "0 0 8 * * *",
     "KEYWORD_REPORT_SCHEDULE": "0 0 7 * * 1",
     "LEADERSHIP_REPORT_SCHEDULE": "0 0 9 * * 1",
     "TEACHER_SUMMARY_SCHEDULE": "0 30 8 * * 1-5",
-    "RETENTION_REPORT_SCHEDULE": "0 0 3 * * 0",
-    "REPORTING_INITIAL_WATERMARK": "2026-01-01T00:00:00Z",
-    "KEYWORD_WATCH_TERMS": "self-harm,violence,abuse",
-    "DSL_MIN_SEVERITY": "medium",
-    "REPORTING_AUDIT_RETENTION_DAYS": "90"
+    "RETENTION_REPORT_SCHEDULE": "0 0 3 * * 0"
   }
 }

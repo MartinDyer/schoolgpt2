@@ -37,44 +37,6 @@ on:
         required: true
         default: 'Europe/London'
         type: string
-      dsl_email:
-        description: 'Primary DSL recipient email'
-        required: true
-        default: 'dsl@example-school.edu'
-        type: string
-      summary_emails:
-        description: 'Comma-separated aggregate summary recipients'
-        required: false
-        default: ''
-        type: string
-      leadership_emails:
-        description: 'Comma-separated anonymised leadership summary recipients'
-        required: false
-        default: ''
-        type: string
-      teacher_summary_emails:
-        description: 'Comma-separated teacher summary recipients'
-        required: false
-        default: ''
-        type: string
-      enable_csv_export:
-        description: 'Attach CSV when flagged incidents exceed threshold'
-        required: true
-        default: true
-        type: boolean
-      csv_export_threshold:
-        description: 'CSV attachment threshold for safeguarding incident count'
-        required: true
-        default: '10'
-        type: string
-      email_provider:
-        description: 'Email provider for reporting delivery'
-        required: true
-        default: 'azure_communication_services'
-        type: choice
-        options:
-          - azure_communication_services
-          - mock
       reporting_plan_sku:
         description: 'Dedicated App Service plan SKU for reporting layer'
         required: true
@@ -122,30 +84,16 @@ jobs:
       - name: Run reporting unit tests
         working-directory: ./reporting
         env:
-          SQL_CONNECTION_STRING: 'Driver=test'
           SCHOOL_NAME: ${{ github.event.inputs.school_name }}
           SCHOOL_TIMEZONE: ${{ github.event.inputs.school_timezone }}
           REPORTING_API_BASE: ${{ github.event.inputs.reporting_api_base }}
           REPORTING_API_KEY: test-reporting-key
-          DSL_EMAIL: ${{ github.event.inputs.dsl_email }}
-          SUMMARY_EMAILS: ${{ github.event.inputs.summary_emails }}
-          LEADERSHIP_EMAILS: ${{ github.event.inputs.leadership_emails }}
-          TEACHER_SUMMARY_EMAILS: ${{ github.event.inputs.teacher_summary_emails }}
-          ENABLE_CSV_EXPORT: ${{ github.event.inputs.enable_csv_export }}
-          CSV_EXPORT_THRESHOLD: ${{ github.event.inputs.csv_export_threshold }}
-          EMAIL_PROVIDER: mock
-          EMAIL_FROM: no-reply@example-school.edu
-          ACS_CONNECTION_STRING: endpoint=https://example/;accesskey=test
           DSL_REPORT_SCHEDULE: '0 0 7 * * *'
           USAGE_REPORT_SCHEDULE: '0 0 8 * * *'
           KEYWORD_REPORT_SCHEDULE: '0 0 7 * * 1'
           LEADERSHIP_REPORT_SCHEDULE: '0 0 9 * * 1'
           TEACHER_SUMMARY_SCHEDULE: '0 30 8 * * 1-5'
           RETENTION_REPORT_SCHEDULE: '0 0 3 * * 0'
-          REPORTING_INITIAL_WATERMARK: '2026-01-01T00:00:00Z'
-          KEYWORD_WATCH_TERMS: 'self-harm,violence,abuse'
-          DSL_MIN_SEVERITY: medium
-          REPORTING_AUDIT_RETENTION_DAYS: '90'
         run: pytest tests/unit tests/integration
 
       - name: Generate deployment names
@@ -188,23 +136,12 @@ jobs:
                 reportingFunctionAppName="${{ steps.names.outputs.reporting_app }}" \
                 appInsightsName="${{ steps.names.outputs.app_insights_name }}" \
                 reportingPlanSku="${{ github.event.inputs.reporting_plan_sku }}" \
-                sqlConnectionString="${{ secrets.SQL_CONNECTION_STRING }}" \
                 schoolTimezone="${{ github.event.inputs.school_timezone }}" \
                 reportingApiBase="${{ github.event.inputs.reporting_api_base }}" \
                 reportingApiKey="${{ secrets.REPORTING_API_KEY }}" \
-                dslEmail="${{ github.event.inputs.dsl_email }}" \
-                summaryEmails="${{ github.event.inputs.summary_emails }}" \
-                leadershipEmails="${{ github.event.inputs.leadership_emails }}" \
-                teacherSummaryEmails="${{ github.event.inputs.teacher_summary_emails }}" \
-                enableCsvExport=${{ github.event.inputs.enable_csv_export }} \
-                csvExportThreshold="${{ github.event.inputs.csv_export_threshold }}" \
-                emailProvider="${{ github.event.inputs.email_provider }}" \
-                emailProviderApiKey="${{ secrets.REPORTING_EMAIL_PROVIDER_API_KEY }}" \
-                acsConnectionString="${{ secrets.ACS_CONNECTION_STRING }}" \
                 leadershipReportSchedule="0 0 9 * * 1" \
                 teacherSummarySchedule="0 30 8 * * 1-5" \
-                retentionReportSchedule="0 0 3 * * 0" \
-                reportingAuditRetentionDays="90"
+                retentionReportSchedule="0 0 3 * * 0"
 
       - name: Publish reporting functions
         uses: Azure/functions-action@v1

@@ -1,6 +1,6 @@
 {
   "venvPath": ".",
-  "venv": ".venv",
+  "venv": ".venv311",
   "include": [
     "function_app.py",
     "manual_run.py",
@@ -8,9 +8,13 @@
     "tests"
   ],
   "exclude": [
+    ".python_packages",
     ".venv",
+    ".venv311",
+    ".pytest_cache",
     "**/__pycache__"
   ],
+  "reportMissingImports": "none",
   "executionEnvironments": [
     {
       "root": ".",

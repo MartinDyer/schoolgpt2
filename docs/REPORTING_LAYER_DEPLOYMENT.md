@@ -21,11 +21,10 @@ This document describes the separate safeguarding reporting layer introduced for
 - `DSL_EMAIL` (**required when reporting is enabled**)
 - `TEACHER_SUMMARY_EMAILS` (optional)
 - `LEADERSHIP_EMAILS` (optional)
+- `SUMMARY_EMAILS` (optional)
 - `ENABLE_CSV_EXPORT`
 - `CSV_EXPORT_THRESHOLD`
 - `REPORTING_PLAN_SKU` (recommended default: `B1`)
-- SQL connection string with reporting read access
-- Email provider configuration
 - Existing Application Insights resource from the base SchoolGPT deployment
 
 ## Runtime Notes
@@ -33,7 +32,8 @@ This document describes the separate safeguarding reporting layer introduced for
 - Recommended provider: **Azure Communication Services**
 - The reporting layer should stay a normal separate Azure Function aligned with the repo's existing deployment shape.
 - The reporting layer no longer relies on direct SQL access from Python.
-- The reporting Function App calls secured backend reporting endpoints, and the backend reuses the existing Node + SQL access path.
+- The reporting Function App only schedules jobs and calls secured backend reporting endpoints.
+- The backend is the only reporting execution layer and owns SQL access, watermarking, audit logging, rendering, locking, and ACS email sending.
 - Reports render timestamps using `SCHOOL_TIMEZONE`.
 - Detailed incident emails are DSL-only; aggregate summaries must not include raw message content.
 - If `ENABLE_CSV_EXPORT=true` and flagged safeguarding incidents exceed `CSV_EXPORT_THRESHOLD`, the DSL report attaches a CSV file that staff can open in Excel.
@@ -84,7 +84,7 @@ B03 will then:
 - create/reuse Azure Communication Services email resources for reporting
 - generate the reporting sender address automatically
 - store `acs-connection-string` and `reporting-email-from` in Key Vault
-- push reporting app settings into Azure
+- push scheduler/proxy app settings into Azure and backend reporting execution settings into the Web App
 - publish the reporting package to the Function App
 
 This keeps reporting as a **separate layer**, but makes setup easier by configuring it during the normal school deployment flow.
@@ -117,11 +117,15 @@ When reporting is enabled, B03 now automates the platform email setup:
 
 So the school/team does **not** need to know those values manually before deployment.
 
-The only reporting values that should still be entered during deployment are the recipient emails:
+The only reporting values that should still be entered during deployment are the recipient emails and scheduling inputs:
 
 - `DSL_EMAIL` (required)
 - `TEACHER_SUMMARY_EMAILS` (optional)
 - `LEADERSHIP_EMAILS` (optional)
+- `SUMMARY_EMAILS` (optional)
+- `SCHOOL_TIMEZONE`
+- `ENABLE_CSV_EXPORT`
+- `CSV_EXPORT_THRESHOLD`
 
 ## Deployment Path
 
@@ -135,6 +139,7 @@ This workflow:
 - runs unit and integration tests
 - validates `bicep/components/07-reporting.bicep`
 - deploys the reporting Function App
+- configures the Function App as scheduler/proxy only
 - publishes the `reporting/` code package
 - prints key deployment outputs for operators
 
@@ -146,21 +151,16 @@ B03 additionally:
 
 ## Manual Operations
 
-For non-public manual execution, use the CLI entry point in the reporting package:
+For non-public manual execution, use the CLI entry point in the reporting package. Manual runs use the same backend proxy path as scheduled runs:
 
 ```bash
 cd reporting
 python manual_run.py dsl-daily
 python manual_run.py usage-daily
 python manual_run.py keyword-watch
-```
-
-Additional phase-2 functions now present:
-
-```bash
-# leadership summary (anonymous)
-# teacher summary/referral
-# retention cleanup
+python manual_run.py leadership-summary
+python manual_run.py teacher-summary
+python manual_run.py retention
 ```
 
 ## Phase Boundary
