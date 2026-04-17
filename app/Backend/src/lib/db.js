@@ -19,6 +19,10 @@ const sqlConfig = process.env.SQL_CONNECTION_STRING
 
 let sqlPool = null;
 
+function shouldBootSql() {
+  return !process.execArgv.includes("--test") && process.env.NO_SQL_BOOTSTRAP !== "1";
+}
+
 async function ensureSchema() {
   const TSQL = `
 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Chats]') AND type in (N'U'))
@@ -72,15 +76,17 @@ END
   console.log("[SQL] Schema ensured (tables ready).");
 }
 
-(async function bootSql() {
-  try {
-    sqlPool = await sql.connect(sqlConfig);
-    console.log("[SQL] Connected to Azure SQL.");
-    await ensureSchema();
-  } catch (err) {
-    console.error("[SQL] Connection error:", err?.message || err);
-  }
-})();
+if (shouldBootSql()) {
+  (async function bootSql() {
+    try {
+      sqlPool = await sql.connect(sqlConfig);
+      console.log("[SQL] Connected to Azure SQL.");
+      await ensureSchema();
+    } catch (err) {
+      console.error("[SQL] Connection error:", err?.message || err);
+    }
+  })();
+}
 
 function deriveTitleAndPreview(messages = []) {
   const firstUser = messages.find((m) => m.role === "user");

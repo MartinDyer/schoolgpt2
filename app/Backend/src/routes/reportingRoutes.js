@@ -7,50 +7,71 @@ const {
   runTeacherSummaryReport,
   runReportingRetention,
 } = require("../lib/reporting");
+const { ReportingError, createReportingErrorResponse } = require("../lib/reporting/errors");
 
-const router = express.Router();
+function createReportingRouter(deps = {}) {
+  const router = express.Router();
+  const reporting = {
+    runDslDailyReport,
+    runUsageDailyReport,
+    runKeywordWatchReport,
+    runLeadershipSummaryReport,
+    runTeacherSummaryReport,
+    runReportingRetention,
+    ...deps,
+  };
 
-router.use((req, res, next) => {
-  const expected = process.env.REPORTING_API_KEY || "";
-  const provided = req.get("x-reporting-key") || "";
-  if (!expected || provided !== expected) {
-    return res.status(401).json({ ok: false, error: "unauthorized" });
-  }
-  next();
-});
+  router.use((req, res, next) => {
+    const expected = process.env.REPORTING_API_KEY || "";
+    const provided = req.get("x-reporting-key") || "";
 
-router.get("/reporting/health", (_req, res) => {
-  return res.json({ ok: true });
-});
+    if (!expected || provided !== expected) {
+      const { status, body } = createReportingErrorResponse(
+        new ReportingError({
+          code: "reporting_unauthorized",
+          message: "Unauthorized reporting request",
+          report: "unknown",
+          retryable: false,
+          status: 401,
+        }),
+        { report: "unknown", requestId: req.requestId || "" }
+      );
+      return res.status(status).json(body);
+    }
 
-router.post("/reporting/run/dsl-daily", async (_req, res) => {
-  const result = await runDslDailyReport();
-  return res.json({ ok: true, ...result });
-});
+    return next();
+  });
 
-router.post("/reporting/run/usage-daily", async (_req, res) => {
-  const result = await runUsageDailyReport();
-  return res.json({ ok: true, ...result });
-});
+  router.get("/reporting/health", (_req, res) => {
+    return res.json({ ok: true });
+  });
 
-router.post("/reporting/run/keyword-watch", async (_req, res) => {
-  const result = await runKeywordWatchReport();
-  return res.json({ ok: true, ...result });
-});
+  router.post("/reporting/run/dsl-daily", createRunHandler("dsl-daily", reporting.runDslDailyReport));
+  router.post("/reporting/run/usage-daily", createRunHandler("usage-daily", reporting.runUsageDailyReport));
+  router.post("/reporting/run/keyword-watch", createRunHandler("keyword-watch", reporting.runKeywordWatchReport));
+  router.post("/reporting/run/leadership-summary", createRunHandler("leadership-summary", reporting.runLeadershipSummaryReport));
+  router.post("/reporting/run/teacher-summary", createRunHandler("teacher-summary", reporting.runTeacherSummaryReport));
+  router.post("/reporting/run/retention", createRunHandler("retention", reporting.runReportingRetention));
 
-router.post("/reporting/run/leadership-summary", async (_req, res) => {
-  const result = await runLeadershipSummaryReport();
-  return res.json({ ok: true, ...result });
-});
+  return router;
+}
 
-router.post("/reporting/run/teacher-summary", async (_req, res) => {
-  const result = await runTeacherSummaryReport();
-  return res.json({ ok: true, ...result });
-});
+function createRunHandler(report, runner) {
+  return async function runReportingHandler(req, res) {
+    try {
+      const result = await runner();
+      return res.json({ ok: true, report, ...result });
+    } catch (error) {
+      const { status, body } = createReportingErrorResponse(error, {
+        report,
+        requestId: req.requestId || "",
+      });
+      return res.status(status).json(body);
+    }
+  };
+}
 
-router.post("/reporting/run/retention", async (_req, res) => {
-  const result = await runReportingRetention();
-  return res.json({ ok: true, ...result });
-});
+const router = createReportingRouter();
 
 module.exports = router;
+module.exports.createReportingRouter = createReportingRouter;
